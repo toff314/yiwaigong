@@ -1,0 +1,39 @@
+node_modules/
+
+# 图片
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.heic
+
+# 视频/音频
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.m4a
+*.wav
+
+# 打包文件与大体积产物
+*.zip
+*.tar
+*.tar.gz
+*.7z
+yiwaigong.zip
+
+# 运行时数据
+data/
+exports/
+*.log
+*.pid
+db.sqlite
+db.sqlite-shm
+db.sqlite-wal
+
+# 工具二进制
+tools/ffmpeg
+tools/ffprobe

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>忆·外公 · 管理</title>
+<style>
+:root{ --bg:#141210; --bg2:#1c1916; --ink:#e8e2d5; --muted:#9a9284; --gold:#c9a86a; --line:rgba(201,168,106,.25); }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Serif SC","Songti SC",serif;padding:24px 16px 60px;display:flex;flex-direction:column;align-items:center}
+h1{font-size:22px;letter-spacing:.3em;text-indent:.3em;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+.card{width:100%;max-width:980px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:16px}
+.card h2{font-size:15px;letter-spacing:.2em;color:var(--gold);margin-bottom:14px;font-weight:600}
+input[type=text],input[type=password],select{background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;padding:8px 2px;font-family:inherit;outline:none;max-width:100%}
+select{background:#141210;border:1px solid var(--line);border-radius:5px;padding:8px 10px}
+input:focus,select:focus{border-bottom-color:var(--gold);border-color:var(--gold)}
+button{background:linear-gradient(180deg,#2a251e,#221e18);border:1px solid var(--gold-dim,#8a7448);color:var(--gold);font-family:inherit;font-size:14px;letter-spacing:.15em;padding:9px 18px;border-radius:6px;cursor:pointer}
+button.small{font-size:12px;padding:5px 10px;letter-spacing:.05em}
+button.ghost{border-color:var(--line);color:var(--muted)}
+button.danger{border-color:#7a4634;color:#c98a6a}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
+.item{border:1px solid rgba(255,255,255,.07);border-radius:6px;overflow:hidden;background:#100e0b}
+.item img,.item video{width:100%;height:150px;object-fit:cover;display:block;background:#000}
+.item .meta{padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.9}
+.item .meta b{color:var(--ink);font-weight:600}
+.item input,.item select{width:100%;font-size:12px;margin:4px 0}
+.item .ops{display:flex;gap:8px;padding:0 12px 12px;flex-wrap:wrap}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+#status{color:var(--muted);font-size:13px}
+.bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.bar label{color:var(--muted);font-size:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:150px}
+.field span{font-size:12px;color:var(--muted)}
+.catorder{display:flex;flex-direction:column;gap:8px;margin-top:6px;max-width:360px}
+.catrow{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.07);border-radius:5px;padding:7px 10px;font-size:13px}
+.catrow .name{flex:1;color:var(--ink)}
+.catrow .cnt{color:var(--muted);font-size:11px}
+.musiclist{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.mrow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.05);padding:6px 0}
+.mrow .mt{flex:1;color:var(--ink)}
+.hint{font-size:12px;color:#6a6254;line-height:1.8;margin-top:8px}
+@media(max-width:600px){.grid{grid-template-columns:1fr 1fr}.card{padding:16px 12px}}
+</style>
+</head>
+<body>
+<h1>忆·外公</h1>
+<div class="sub">管理后台 · 仅家人使用</div>
+
+<div class="card" id="login-card">
+  <input type="password" id="pwd" placeholder="管理密码" style="width:220px">
+  <button onclick="login()">进 入</button>
+</div>
+
+<div id="main" style="display:none">
+  <div class="card">
+    <div class="toolbar">
+      <button onclick="doExport()">导出离线播放包 (zip)</button>
+      <a id="dl" style="display:none;color:var(--gold);font-size:14px;text-decoration:none" href="#">下载 zip</a>
+      <label class="small" style="color:var(--muted);font-size:12px">批量导入 zip：
+        <input type="file" id="zipfile" accept=".zip" style="color:var(--muted);font-size:12px">
+      </label>
+      <button class="ghost small" onclick="doImport()">导入</button>
+      <span id="status"></span>
+    </div>
+    <div class="hint">导入 zip 会按目录（早期 / 平时 / 酒席 / 旅行 / 生病 / 合影）归档，统一命名，并自动补充随机留言。</div>
+  </div>
+
+  <div class="card">
+    <h2>播放设置</h2>
+    <div class="bar">
+      <div class="field"><span>播放方式</span>
+        <select id="playMode">
+          <option value="category">按目录顺序（显示目录标题卡）</option>
+          <option value="sequence">全部顺序（不显示标题卡）</option>
+          <option value="random">全部随机</option>
+          <option value="single">只循环一个目录</option>
+        </select>
+      </div>
+      <div class="field"><span>只循环目录</span>
+        <select id="singleCategory"></select>
+      </div>
+      <div class="field"><span>播放速度</span>
+        <select id="speed">
+          <option value="0.5">0.5 倍速（更慢）</option>
+          <option value="0.75">0.75 倍速</option>
+          <option value="1">1 倍速（标准）</option>
+          <option value="1.25">1.25 倍速</option>
+          <option value="1.5">1.5 倍速</option>
+          <option value="2">2 倍速（较快）</option>
+          <option value="3">3 倍速（快速浏览）</option>
+        </select>
+      </div>
+      <div class="field"><span>目录标题卡</span>
+        <label style="font-size:13px;color:var(--ink)"><input type="checkbox" id="showCategoryCard" style="width:auto"> 显示</label>
+      </div>
+      <div class="field"><span>循环播放</span>
+        <label style="font-size:13px;color:var(--ink)"><input type="checkbox" id="loop" style="width:auto"> 播放完继续</label>
+      </div>
+    </div>
+
+    <div class="bar" style="margin-top:18px">
+      <div class="field" style="min-width:320px"><span>开场主图（点击开始后先显示这张）</span>
+        <select id="coverImage"></select>
+      </div>
+    </div>
+
+    <div class="bar" style="margin-top:14px">
+      <div class="field"><span>音乐音量 <b id="volTxt">55%</b></span>
+        <input type="range" id="musicVolume" min="0" max="1" step="0.05" value="0.55" style="width:180px">
+      </div>
+      <div class="field"><span>上传音乐</span>
+        <input type="file" id="musicfile" accept=".mp3,.m4a,.wav,.ogg,.aac,.flac" style="color:var(--muted);font-size:12px">
+      </div>
+      <button class="ghost small" onclick="uploadMusic()">上传音乐</button>
+      <button class="ghost small" onclick="previewMusic()">试听第一首</button>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:13px;color:var(--muted)">背景音乐播放顺序（勾选要播放的，从上到下循环；可调顺序）</div>
+      <div class="catorder" id="musicOrder" style="max-width:620px"></div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div style="font-size:13px;color:var(--muted)">目录播放顺序（从上到下）</div>
+      <div class="catorder" id="catorder"></div>
+      <div class="bar" style="margin-top:10px">
+        <input type="text" id="newCategory" placeholder="新目录名称，如：童年" maxlength="20" style="width:220px">
+        <button class="small" onclick="createCategory()">新建目录</button>
+      </div>
+      <div class="hint">新建后，家属上传页会自动出现这个目录；空目录可以删除。</div>
+    </div>
+
+    <div class="bar" style="margin-top:18px">
+      <button onclick="saveSettings()">保存播放设置</button>
+      <a href="/play.html" target="_blank" style="color:var(--gold);font-size:13px;text-decoration:none;align-self:center">打开播放页 →</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>素材管理</h2>
+    <div class="hint" style="margin:-4px 0 8px">照片可以改「照片排序」（数字越小越靠前）；视频顺序固定，不参与排序。「重要」照片不会放进留影墙小图，会单独大图展示并停留约 1.8 倍时间。</div>
+    <div class="bar">
+      <div class="field"><span>按目录筛选</span><select id="filter" onchange="renderGrid()"></select></div>
+      <span id="stat" style="color:var(--muted);font-size:12px"></span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<script>
+let KEY='', state={items:[],categories:[],settings:{},music:[],mainImages:[]}, catOrder=[], musicOrder=[], musicSelected=new Set();
+let previewAudio=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const catName=v=>(v||'').trim()||'未分类';
+
+async function login(){
+  KEY=$('pwd').value.trim();
+  const r=await fetch('/api/admin/list?key='+encodeURIComponent(KEY));
+  if(!r.ok){ alert('密码不正确'); return; }
+  $('login-card').style.display='none'; $('main').style.display='';
+  apply(await r.json());
+}
+$('pwd').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+
+function apply(d){
+  state=d; catOrder=(d.settings.categoryOrder||[]).slice();
+  setSelect('playMode',d.settings.playMode);
+  setSelect('speed',String(d.settings.speed||1));
+  $('showCategoryCard').checked=!!d.settings.showCategoryCard;
+  $('loop').checked=!!d.settings.loop;
+  $('musicVolume').value=d.settings.musicVolume==null?0.55:d.settings.musicVolume;
+  $('volTxt').textContent=Math.round(Number($('musicVolume').value)*100)+'%';
+  const playlist=(d.settings.musicPlaylist&&d.settings.musicPlaylist.length)?d.settings.musicPlaylist:(d.settings.music?[d.settings.music]:[]);
+  musicSelected=new Set(playlist);
+  const files=state.music.map(m=>m.file);
+  musicOrder=playlist.filter(f=>files.includes(f));
+  for(const f of files) if(!musicOrder.includes(f)) musicOrder.push(f);
+  renderFilter(); renderSingle(); renderMusicOrder(); renderCoverSelect(); renderCatOrder(); renderGrid();
+}
+
+function setSelect(id,v){ const el=$(id); if(!el) return; if([...el.options].some(o=>o.value===v)) el.value=v; else if(el.options.length) el.selectedIndex=0; }
+
+function renderFilter(){
+  const f=$('filter'); const cur=f.value;
+  f.innerHTML='<option value="__all">全部目录</option>'+state.categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)} (${c.count})</option>`).join('');
+  f.value=[...f.options].some(o=>o.value===cur)?cur:'__all';
+}
+function renderSingle(){
+  const s=$('singleCategory'); const cur=s.value||state.settings.singleCategory||'all';
+  s.innerHTML='<option value="all">全部目录</option>'+state.categories.filter(c=>c.name!=='未分类').map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join('');
+  s.value=[...s.options].some(o=>o.value===cur)?cur:'all';
+}
+function musicLabel(m){ return m.title+(m.size?` (${(m.size/1048576).toFixed(1)}MB)`:'') }
+function renderCoverSelect(){
+  const s=$('coverImage'); const cur=state.settings.coverImage||'';
+  const photos=state.items.filter(i=>i.kind==='photo');
+  s.innerHTML='<option value="">不使用主图</option>'
+    + (state.mainImages.length?`<optgroup label="设计主图">${state.mainImages.map(m=>`<option value="${esc(m.path)}">${esc(m.title)}</option>`).join('')}</optgroup>`:'')
+    + `<optgroup label="相册照片">${photos.map(p=>`<option value="media/${esc(p.filename)}">${esc(p.category||'未分类')} · ${esc((p.caption||p.filename).slice(0,28))}</option>`).join('')}</optgroup>`;
+  s.value=[...s.options].some(o=>o.value===cur)?cur:'';
+}
+function renderMusicOrder(){
+  const rows=musicOrder.map((file,i)=>{
+    const m=state.music.find(x=>x.file===file)||{title:file,size:0};
+    return `<div class="catrow">
+      <input type="checkbox" ${musicSelected.has(file)?'checked':''} onchange="toggleMusic('${esc(file)}',this.checked)" style="width:auto">
+      <span class="name">${esc(musicLabel(m))}</span>
+      <button class="small ghost" onclick="playMusic('${esc(file)}')">试听</button>
+      <button class="small ghost" onclick="moveMusic(${i},-1)" ${i===0?'disabled':''}>↑</button>
+      <button class="small ghost" onclick="moveMusic(${i},1)" ${i===musicOrder.length-1?'disabled':''}>↓</button>
+      <button class="small danger" onclick="deleteMusic('${esc(file)}')">删除</button>
+    </div>`;
+  }).join('');
+  $('musicOrder').innerHTML=rows||'<div style="color:var(--muted);font-size:12px">音乐库还没有文件，可上传 Suno 生成的 mp3</div>';
+}
+function toggleMusic(file,on){ if(on) musicSelected.add(file); else musicSelected.delete(file); }
+function moveMusic(i,d){
+  const j=i+d; if(j<0||j>=musicOrder.length) return;
+  [musicOrder[i],musicOrder[j]]=[musicOrder[j],musicOrder[i]];
+  renderMusicOrder();
+}
+function selectedMusic(){ return musicOrder.filter(f=>musicSelected.has(f)); }
+function renderCatOrder(){
+  $('catorder').innerHTML=catOrder.map((c,i)=>{
+    const cnt=(state.categories.find(x=>x.name===c)||{}).count||0;
+    return `<div class="catrow"><span class="name">${esc(c)}</span>
+      <span class="cnt">${cnt} 份</span>
+      <button class="small ghost" onclick="moveCat(${i},-1)" ${i===0?'disabled':''}>↑</button>
+      <button class="small ghost" onclick="moveCat(${i},1)" ${i===catOrder.length-1?'disabled':''}>↓</button>
+      ${cnt===0&&c!=='未分类'?`<button class="small danger" onclick="deleteCategory('${esc(c)}')">删除</button>`:''}
+    </div>`;
+  }).join('');
+}
+function moveCat(i,d){
+  const j=i+d; if(j<0||j>=catOrder.length) return;
+  [catOrder[i],catOrder[j]]=[catOrder[j],catOrder[i]]; renderCatOrder();
+}
+
+async function createCategory(){
+  const name=$('newCategory').value.trim();
+  if(!name) return alert('请填写目录名称');
+  const r=await fetch('/api/admin/categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,name})});
+  const d=await r.json();
+  if(d.ok){ $('newCategory').value=''; await refresh(); flash('目录已创建'); }
+  else alert(d.error||'创建失败');
+}
+
+async function setAsCover(filename){
+  const r=await fetch('/api/admin/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,coverImage:'media/'+filename})});
+  const d=await r.json();
+  if(d.ok){ state.settings=d.settings; renderCoverSelect(); renderGrid(); flash('已设为主图'); }
+  else alert('设置失败');
+}
+
+async function deleteCategory(name){
+  if(!confirm('删除空目录：'+name+'？')) return;
+  const r=await fetch('/api/admin/categories/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,name})});
+  const d=await r.json();
+  if(d.ok){ await refresh(); flash('目录已删除'); }
+  else alert(d.error||'删除失败');
+}
+
+async function saveSettings(){
+  const playlist=selectedMusic();
+  const body={key:KEY,playMode:$('playMode').value,speed:Number($('speed').value),singleCategory:$('singleCategory').value,
+    showCategoryCard:$('showCategoryCard').checked?1:0,loop:$('loop').checked?1:0,music:playlist[0]||'',musicPlaylist:playlist,coverImage:$('coverImage').value,
+    musicVolume:Number($('musicVolume').value),categoryOrder:catOrder};
+  const r=await fetch('/api/admin/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.ok){ state.settings=d.settings; catOrder=d.settings.categoryOrder.slice(); flash('播放设置已保存'); renderCatOrder(); renderMusicOrder(); }
+  else flash('保存失败');
+}
+function flash(t){ $('status').textContent=t; setTimeout(()=>$('status').textContent='',2500); }
+
+function renderGrid(){
+  const f=$('filter').value||'__all';
+  const list=state.items.filter(it=>f==='__all'||catName(it.category)===f);
+  $('stat').textContent=`共 ${list.length} / ${state.items.length} 份素材`;
+  $('grid').innerHTML=list.map(it=>`
+    <div class="item">
+      ${it.kind==='photo'
+        ? `<img src="/media/${encodeURIComponent(it.filename)}" loading="lazy">`
+        : `<video src="/media/${encodeURIComponent(it.filename)}#t=1" preload="metadata" muted></video>`}
+      <div class="meta">
+        <b>${esc(it.uploader)}</b> · ${it.kind==='photo'?'照片':'视频'} · ${new Date(it.created_at).toLocaleDateString()}
+        ${it.kind==='photo'&&state.settings.coverImage==='media/'+it.filename?'<span style="color:var(--gold)"> · 当前主图</span>':''}<br>
+        文件: ${esc(it.filename)}<br>
+        <select id="cat-${it.id}">
+          <option value="">未分类</option>
+          ${state.categories.filter(c=>c.name!=='未分类').map(c=>`<option value="${esc(c.name)}" ${catName(it.category)===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}
+        </select>
+        <input type="text" id="cap-${it.id}" value="${esc(it.caption||'')}" placeholder="留言">
+        <input type="text" id="up-${it.id}" value="${esc(it.uploader||'')}" placeholder="署名">
+        <input type="text" id="yr-${it.id}" value="${esc(it.year||'')}" placeholder="年代角标 如 1998" style="width:48%;display:inline-block">
+        ${it.kind==='photo'
+          ? `<input type="number" id="so-${it.id}" value="${it.sort_order||0}" placeholder="照片排序" style="width:48%;display:inline-block">`
+          : `<span style="display:inline-block;width:48%;color:#6a6254;font-size:11px">视频顺序固定</span>`}
+        <label style="font-size:12px"><input type="checkbox" id="ft-${it.id}" ${it.featured?'checked':''} style="width:auto"> 重要（大图更久）</label>
+      </div>
+      <div class="ops">
+        <button class="small" onclick="saveItem(${it.id})">保存</button>
+        ${it.kind==='photo'?`<button class="small ghost" onclick="setAsCover('${esc(it.filename)}')">设为主图</button>`:''}
+        <button class="small danger" onclick="delItem(${it.id})">删除</button>
+      </div>
+    </div>`).join('')||'<div style="color:var(--muted)">还没有素材</div>';
+}
+async function saveItem(id){
+  const body={key:KEY,id,caption:$('cap-'+id).value,year:$('yr-'+id).value,featured:$('ft-'+id).checked?1:0,
+    uploader:$('up-'+id).value,category:$('cat-'+id).value,sort_order:$('so-'+id)?Number($('so-'+id).value)||0:0};
+  const r=await fetch('/api/admin/update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  flash(r.ok?'已保存':'保存失败');
+  if(r.ok) await refresh();
+}
+async function delItem(id){
+  if(!confirm('确定删除这份素材？')) return;
+  await fetch('/api/admin/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,id})});
+  await refresh();
+}
+async function refresh(){
+  const r=await fetch('/api/admin/list?key='+encodeURIComponent(KEY));
+  if(r.ok) apply(await r.json());
+}
+async function doImport(){
+  const f=$('zipfile').files[0]; if(!f) return alert('请选择 zip 文件');
+  $('status').textContent='正在导入，请稍候…';
+  const fd=new FormData(); fd.append('zip',f);
+  const r=await fetch('/api/admin/import-zip?key='+encodeURIComponent(KEY),{method:'POST',body:fd});
+  const d=await r.json();
+  if(d.ok){ $('status').textContent='导入完成'; alert('导入完成\n'+(d.log||[]).join('\n')); await refresh(); }
+  else $('status').textContent=d.error||'导入失败';
+}
+async function doExport(){
+  $('status').textContent='正在打包…';
+  const r=await fetch('/api/admin/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY})});
+  const d=await r.json();
+  if(d.ok){ $('dl').style.display=''; $('dl').href=d.download; $('status').textContent='打包完成，点击下载 ('+(d.size/1048576).toFixed(1)+' MB)'; }
+  else $('status').textContent=d.error||'导出失败';
+}
+
+async function uploadMusic(){
+  const f=$('musicfile').files[0]; if(!f) return alert('请选择音频文件');
+  const fd=new FormData(); fd.append('file',f);
+  $('status').textContent='正在上传音乐…';
+  const r=await fetch('/api/admin/music/upload?key='+encodeURIComponent(KEY),{method:'POST',body:fd});
+  const d=await r.json();
+  if(d.ok){
+    state.music=d.music;
+    if(!musicOrder.includes(d.file)) musicOrder.push(d.file);
+    musicSelected.add(d.file);
+    renderMusicOrder();
+    $('status').textContent='音乐已上传，已勾选，记得保存播放设置';
+  } else $('status').textContent=d.error||'上传失败';
+}
+async function deleteMusic(file){
+  if(!confirm('删除音乐：'+file+'？')) return;
+  const r=await fetch('/api/admin/music/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,file})});
+  const d=await r.json();
+  if(d.ok){ state.music=d.music; musicOrder=musicOrder.filter(f=>f!==file); musicSelected.delete(file); renderMusicOrder(); flash('音乐已删除'); }
+}
+function playMusic(file){ if(previewAudio){previewAudio.pause()} previewAudio=new Audio('/music/'+encodeURIComponent(file)); previewAudio.volume=0.6; previewAudio.play().catch(()=>alert('无法播放，请检查文件')); }
+function previewMusic(){ const f=selectedMusic()[0]; if(!f) return alert('请先勾选一首背景音乐'); playMusic(f); }
+$('musicVolume').addEventListener('input',e=>{ $('volTxt').textContent=Math.round(Number(e.target.value)*100)+'%'; });
+</script>
+</body>
+</html>

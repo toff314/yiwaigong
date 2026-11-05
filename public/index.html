@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>忆·外公 · 收集大家的回忆</title>
+<link rel="stylesheet" href="/lanterns.css">
+<style>
+:root{
+  --bg:#141210; --bg2:#1c1916; --ink:#e8e2d5; --muted:#9a9284;
+  --gold:#c9a86a; --gold-dim:#8a7448; --line:rgba(201,168,106,.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(900px 540px at 50% -8%, rgba(201,168,106,.10), transparent 65%),
+    radial-gradient(760px 520px at 50% 118%, rgba(201,168,106,.05), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Noto Serif SC","Songti SC","STSong",serif;
+  display:flex; flex-direction:column; align-items:center;
+  min-height:100vh; padding:24px 16px 48px;
+  position:relative;
+}
+.top-mark,.card,.count-band,.watch-btn{position:relative;z-index:1}
+/* 顶部装饰 */
+.top-mark{width:100%;max-width:520px;text-align:center;padding:32px 0 8px}
+.chrys{width:44px;height:44px;margin:0 auto 18px;opacity:.9;filter:drop-shadow(0 0 12px rgba(201,168,106,.25))}
+h1{font-size:38px;font-weight:600;letter-spacing:.35em;text-indent:.35em;color:var(--ink);text-shadow:0 0 28px rgba(201,168,106,.28)}
+.years{margin-top:14px;font-size:17px;color:var(--gold);letter-spacing:.4em;text-indent:.4em}
+.divider{width:64px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:22px auto}
+.verse{font-size:16px;color:var(--muted);letter-spacing:.15em;line-height:2.1}
+
+.card{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(30,27,23,.94),rgba(24,21,18,.96));border:1px solid var(--line);border-radius:10px;padding:26px 22px;margin-top:26px;box-shadow:0 18px 48px rgba(0,0,0,.34);backdrop-filter:blur(3px)}
+label{display:block;font-size:13px;color:var(--muted);margin:16px 0 8px;letter-spacing:.1em}
+label:first-child{margin-top:0}
+input[type=text]{width:100%;background:transparent;border:none;border-bottom:1px solid var(--line);color:var(--ink);font-size:17px;padding:8px 2px;font-family:inherit;letter-spacing:.05em;outline:none}
+input[type=text]:focus{border-bottom-color:var(--gold)}
+input::placeholder{color:#5a5346}
+select{width:100%;background:#141210;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-family:inherit;font-size:16px;padding:10px 8px;outline:none;letter-spacing:.05em}
+select:focus{border-color:var(--gold)}
+
+/* 寄语快捷选择 */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 14px;cursor:pointer;transition:all .3s}
+.chip.on{color:var(--gold);border-color:var(--gold)}
+
+/* 上传区 */
+.drop{border:1px dashed var(--gold-dim);border-radius:8px;padding:30px 16px;text-align:center;color:var(--muted);font-size:14px;letter-spacing:.1em;cursor:pointer;transition:border-color .3s;margin-top:4px}
+.drop:active{border-color:var(--gold)}
+.drop input{display:none}
+.hint{font-size:12px;color:#6a6254;margin-top:10px;line-height:1.8}
+
+/* 队列 */
+.queue{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+.qitem{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.04)}
+.qitem .st{color:var(--gold)}
+.qitem .st.err{color:#b0654f}
+
+/* 计数 */
+.count-band{width:100%;max-width:520px;text-align:center;margin-top:26px;font-size:14px;color:var(--muted);letter-spacing:.15em}
+.count-band b{color:var(--gold);font-size:20px;font-weight:600;margin:0 4px}
+.lamp-band{margin-top:16px}
+.lamp-band b{font-size:18px}
+
+button.submit{
+  width:100%;margin-top:24px;background:linear-gradient(180deg,#2a251e,#221e18);
+  border:1px solid var(--gold-dim);color:var(--gold);font-family:inherit;
+  font-size:16px;letter-spacing:.4em;text-indent:.4em;padding:14px;border-radius:6px;cursor:pointer;transition:all .3s;
+}
+button.submit:disabled{opacity:.4;cursor:wait}
+button.submit:not(:disabled):active{border-color:var(--gold)}
+
+.done-view{text-align:center;padding:30px 0}
+.done-view .big{font-size:22px;color:var(--gold);letter-spacing:.3em;text-indent:.3em;margin-bottom:14px}
+.done-view p{font-size:14px;color:var(--muted);line-height:2.2;letter-spacing:.08em}
+
+.watch-btn{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  width:100%;max-width:520px;margin-top:30px;padding:17px 22px;
+  text-decoration:none;border-radius:10px;
+  background:linear-gradient(180deg,rgba(201,168,106,.26),rgba(201,168,106,.09));
+  border:1px solid var(--gold);
+  box-shadow:0 0 0 1px rgba(201,168,106,.14),0 10px 34px rgba(201,168,106,.14);
+  transition:all .3s;cursor:pointer;
+}
+.watch-btn .main{font-size:19px;color:var(--gold);letter-spacing:.32em;text-indent:.32em;font-weight:600}
+.watch-btn .sub{font-size:12px;color:var(--muted);letter-spacing:.22em;text-indent:.22em}
+.watch-btn:hover,.watch-btn:active{
+  background:linear-gradient(180deg,rgba(201,168,106,.38),rgba(201,168,106,.16));
+  border-color:#e8c987;box-shadow:0 0 0 1px rgba(232,201,135,.3),0 12px 40px rgba(232,201,135,.22);
+}
+.watch-btn .main{display:flex;align-items:center;justify-content:center;gap:10px}
+.watch-btn .lamp-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,#fff6d8,#ffc768 55%,#d88a2c);
+  box-shadow:0 0 10px 3px rgba(255,180,80,.65),0 0 22px 8px rgba(255,150,45,.28);
+  animation:lampFlicker 2.8s ease-in-out infinite;
+}
+@media (max-width:400px){ .watch-btn .main{font-size:17px} }
+
+/* 提示浮层 */
+.toast{position:fixed;left:50%;bottom:48px;transform:translateX(-50%);background:#2a251e;border:1px solid var(--line);color:var(--ink);font-size:14px;padding:10px 22px;border-radius:6px;letter-spacing:.05em;opacity:0;transition:opacity .4s;pointer-events:none;max-width:86vw;text-align:center}
+.toast.show{opacity:1}
+
+@media (max-width:400px){ h1{font-size:30px} .years{font-size:15px} .verse{font-size:15px} .card{padding:22px 16px} }
+</style>
+</head>
+<body>
+  <div class="sky fixed" id="sky" aria-hidden="true"></div>
+  <div class="top-mark">
+    <div class="chrys">
+      <svg viewBox="0 0 48 48" fill="none"><g stroke="#c9a86a" stroke-width="1.1" opacity=".85">
+        <circle cx="24" cy="24" r="3.2"/>
+        <g><ellipse cx="24" cy="13" rx="4.4" ry="7.2"/><ellipse cx="24" cy="35" rx="4.4" ry="7.2"/><ellipse cx="13" cy="24" rx="7.2" ry="4.4"/><ellipse cx="35" cy="24" rx="7.2" ry="4.4"/></g>
+        <g opacity=".55" transform="rotate(45 24 24)"><ellipse cx="24" cy="13.5" rx="3.8" ry="6.6"/><ellipse cx="24" cy="34.5" rx="3.8" ry="6.6"/><ellipse cx="13.5" cy="24" rx="6.6" ry="3.8"/><ellipse cx="34.5" cy="24" rx="6.6" ry="3.8"/></g>
+      </g></svg>
+    </div>
+    <h1 id="title">忆·外公</h1>
+    <div class="years" id="years">叶玉生 · 1938 — 2026</div>
+    <div class="divider"></div>
+    <div class="verse">音容宛在 &nbsp;·&nbsp; 风范长存<br>请您分享与老人共度的记忆</div>
+  </div>
+
+  <!-- 口令门 -->
+  <div class="card" id="gate-view">
+    <label>进门口令</label>
+    <input type="text" id="gate-code" placeholder="请输入家人口令" autocomplete="off">
+    <button class="submit" id="gate-btn">进 入</button>
+    <div class="hint" style="text-align:center">口令由家人统一告知，用于保护这份回忆</div>
+  </div>
+
+  <!-- 上传表单 -->
+  <div class="card" id="form-view" style="display:none">
+    <label>您的名字</label>
+    <input type="text" id="uploader" placeholder="怎么称呼您（会展示在照片旁）" maxlength="30">
+
+    <label>选择照片 / 视频</label>
+    <div class="drop" id="drop">
+      点此选择 · 可多选<br><span style="font-size:12px">照片 jpg/png · 视频 mp4/mov · 单个最大 500MB</span>
+      <input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm">
+    </div>
+    <div class="queue" id="queue"></div>
+
+    <label>这段回忆属于哪个目录</label>
+    <select id="category">
+      <option value="">未分类</option>
+    </select>
+    <div class="hint">选择后会自动按「目录-序号」统一命名；不填寄语时，会为您自动配一条思念留言。</div>
+
+    <label>寄语（可选，对所有本次上传的素材生效）</label>
+    <div class="chips" id="chips"></div>
+    <input type="text" id="caption" placeholder="或写一句您想对老人说的话" maxlength="200" style="margin-top:10px">
+
+    <button class="submit" id="send" disabled>交 付 回 忆</button>
+    <div class="hint" style="text-align:center">照片将自动压缩以方便传输，视频保留原样</div>
+  </div>
+
+  <!-- 完成页 -->
+  <div class="card done-view" id="done-view" style="display:none">
+    <div class="big">谢 谢 您</div>
+    <p>您的回忆已妥为收存<br>将在告别仪式的屏幕上与大家见面</p>
+    <button class="submit" id="again" style="margin-top:22px">继续上传</button>
+  </div>
+
+  <div class="count-band">已收集 <b id="cnt">—</b> 份回忆</div>
+  <a class="watch-btn" id="watch-btn" href="/play.html">
+    <span class="main"><span class="lamp-dot"></span>点亮心灯 · 忆·外公</span>
+    <span class="sub">进入追思相册</span>
+  </a>
+  <div class="count-band lamp-band">已有 <b id="lamps">—</b> 盏心灯亮起</div>
+
+  <div class="toast" id="toast"></div>
+
+<script src="/lanterns.js"></script>
+<script>
+const PRESETS = ['外公，我们想您','您的音容笑貌永存心间','怀念和您在一起的日子','一路走好，愿天堂没有病痛','谢谢您曾经的爱与教诲','岁月带不走我们的思念'];
+let code = sessionStorage.getItem('mem_code') || '';
+let files = [];
+
+const $ = id => document.getElementById(id);
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function show(v){ ['gate-view','form-view','done-view'].forEach(x=>$(x).style.display = x===v?'':'none'); }
+
+// 目录
+const CATEGORY_FALLBACK=['早期','平时','酒席','旅行','生病','合影'];
+function loadCategories(){
+  fetch('/api/categories').then(r=>r.json()).then(d=>{
+    const list=(d.categories||[]).filter(c=>c!=='未分类');
+    (list.length?list:CATEGORY_FALLBACK).forEach(c=>{
+      const o=document.createElement('option'); o.value=c; o.textContent=c; $('category').appendChild(o);
+    });
+  }).catch(()=>{
+    CATEGORY_FALLBACK.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; $('category').appendChild(o); });
+  });
+}
+loadCategories();
+
+// 计数
+function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>$('cnt').textContent=d.total).catch(()=>{}); }
+refreshCount(); setInterval(refreshCount, 15000);
+
+// 点亮心灯：每次点击记一次并显示；背景按心灯数量漂浮
+let renderedLamps = -1;
+function renderLanterns(n){
+  const count = Math.max(0, Number(n) || 0);
+  if(count === renderedLamps) return;
+  renderedLamps = count;
+  Lanterns.render($('sky'), count, { max: 20 });
+}
+function refreshLamps(){
+  fetch('/api/lamps').then(r=>r.json()).then(d=>{
+    $('lamps').textContent = d.lamps;
+    renderLanterns(d.lamps);
+  }).catch(()=>{});
+}
+refreshLamps();
+$('watch-btn').addEventListener('click', async e=>{
+  e.preventDefault();
+  try{
+    const r = await fetch('/api/lamps',{method:'POST'});
+    const d = await r.json();
+    $('lamps').textContent = d.lamps;
+    renderLanterns(d.lamps);
+    await new Promise(r=>setTimeout(r, 600));
+  }catch{}
+  location.href='/play.html';
+});
+
+// 口令门
+function tryGate(){
+  const v = $('gate-code').value.trim();
+  if(!v) return toast('请输入口令');
+  code = v; sessionStorage.setItem('mem_code', v);
+  $('gate-view').style.display='none'; show('form-view');
+}
+$('gate-btn').onclick = tryGate;
+$('gate-code').addEventListener('keydown', e=>{ if(e.key==='Enter') tryGate(); });
+if(code) { $('gate-view').style.display='none'; show('form-view'); }
+
+// 预置寄语
+PRESETS.forEach(p=>{
+  const c=document.createElement('div'); c.className='chip'; c.textContent=p;
+  c.onclick=()=>{ document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); $('caption').value=p; };
+  $('chips').appendChild(c);
+});
+
+// 文件选择
+$('drop').onclick = ()=>$('files').click();
+$('files').onchange = e=>{
+  files = Array.from(e.target.files);
+  renderQueue();
+};
+function renderQueue(){
+  $('queue').innerHTML = files.map((f,i)=>
+    `<div class="qitem"><span>${i+1}. ${f.name.length>28?f.name.slice(0,26)+'…':f.name}</span><span class="st" id="q${i}">待传</span></div>`
+  ).join('');
+  $('send').disabled = files.length===0;
+}
+
+// 上传
+$('send').onclick = async ()=>{
+  if(!files.length) return;
+  const uploader = $('uploader').value.trim();
+  if(!uploader) return toast('请先填写您的名字');
+  $('send').disabled = true;
+  const caption = $('caption').value.trim();
+  let ok=0;
+  for(let i=0;i<files.length;i++){
+    const st=$('q'+i); st.textContent='上传中…'; st.className='st';
+    try{
+      const fd=new FormData();
+      fd.append('code', code); fd.append('uploader', uploader); fd.append('caption', caption);
+      fd.append('category', $('category').value);
+      fd.append('files', files[i]);
+      const r = await fetch('/api/upload',{method:'POST',body:fd});
+      const d = await r.json();
+      if(!r.ok || !d.ok) throw new Error(d.error||'失败');
+      st.textContent='✓ 已收存'; ok++;
+      refreshCount();
+    }catch(err){ st.textContent='✗ '+err.message; st.className='st err'; }
+  }
+  if(ok===files.length){
+    files=[]; $('files').value=''; renderQueue();
+    show('done-view');
+  } else {
+    toast('部分上传失败，可重试失败项');
+    $('send').disabled=false;
+  }
+};
+$('again').onclick = ()=>{ show('form-view'); $('send').disabled=true; };
+</script>
+</body>
+</html>
