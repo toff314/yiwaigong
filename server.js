@@ -239,7 +239,8 @@ app.post('/api/upload', upload.array('files', 50), async (req, res) => {
         .run(filename, f.originalname, kind, uploader, caption, '', 0, category, seq, Date.now());
       saved.push({ id: info.lastInsertRowid, kind, filename });
     }
-    res.json({ ok: true, saved: saved.length, total: db.prepare('SELECT COUNT(*) c FROM media').get().c });
+    if (saved.length) addLamps(saved.length);
+    res.json({ ok: true, saved: saved.length, total: db.prepare('SELECT COUNT(*) c FROM media').get().c, lamps: lampCount() });
   } catch (e) {
     for (const f of req.files || []) { try { fs.unlinkSync(f.path); } catch {} }
     res.status(500).json({ error: '保存失败: ' + e.message });
@@ -301,20 +302,30 @@ app.post('/api/messages', (req, res) => {
   if (!content) return res.status(400).json({ error: '请写下想说的话' });
   const info = db.prepare('INSERT INTO messages (name, content, created_at) VALUES (?,?,?)')
     .run(name, content, Date.now());
+  addLamps(1);
   res.json({
     ok: true,
     id: info.lastInsertRowid,
     total: db.prepare('SELECT COUNT(*) c FROM messages').get().c,
+    lamps: lampCount(),
   });
 });
 
-// 「点亮心灯」计数：点击累加，并每小时自动增加 1 盏；持久化在 stats 表
+// 「点亮心灯」计数：点击、留言、上传都会加灯，并且每小时自动增加 2 盏
 const LAMP_KEY = 'lamps';
 const LAMP_AUTO_KEY = 'lamps_last_auto';
 const LAMP_INTERVAL_MS = 60 * 60 * 1000;
+const LAMP_PER_HOUR = 2;
 const upsertStat = (key, value) => db.prepare(
   'INSERT INTO stats (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'
 ).run(key, value);
+
+function addLamps(n) {
+  n = Math.max(0, Number(n) || 0);
+  if (!n) return;
+  db.prepare('INSERT INTO stats (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=value+excluded.value')
+    .run(LAMP_KEY, n);
+}
 
 function applyHourlyLamps() {
   const now = Date.now();
@@ -326,12 +337,12 @@ function applyHourlyLamps() {
   const last = Number(row.value) || now;
   const hours = Math.floor((now - last) / LAMP_INTERVAL_MS);
   if (hours <= 0) return 0;
+  const add = hours * LAMP_PER_HOUR;
   db.transaction(() => {
-    db.prepare('INSERT INTO stats (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=value+excluded.value')
-      .run(LAMP_KEY, hours);
+    addLamps(add);
     upsertStat(LAMP_AUTO_KEY, last + hours * LAMP_INTERVAL_MS);
   })();
-  return hours;
+  return add;
 }
 
 function lampCount() {
