@@ -92,7 +92,7 @@ let lampCount=0;
 fetch('/api/lamps').then(r=>r.json()).then(d=>{
   lampCount=Math.max(0, Number(d.lamps)||0);
   const el=document.getElementById('c-lamps'); if(el) el.textContent=lampCount;
-  if(window.Lanterns) Lanterns.render(document.getElementById('cover-lanterns'), lampCount, {max:36});
+  if(window.Lanterns) Lanterns.render(document.getElementById('cover-lanterns'), lampCount, {max:32});
 }).catch(()=>{});
 function lightLamp(){
   fetch('/api/lamps',{method:'POST',keepalive:true}).then(r=>r.json()).then(d=>{

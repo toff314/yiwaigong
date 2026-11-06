@@ -3,20 +3,20 @@
   function render(container, count, options) {
     if (!container) return 0;
     const opt = options || {};
-    const max = opt.max || 40;
+    const max = opt.max || 32;   // 心灯上限
     const minOpacity = opt.minOpacity != null ? opt.minOpacity : 0.26;
     const maxOpacity = opt.maxOpacity != null ? opt.maxOpacity : 0.7;
     const n = Math.max(0, Number(count) || 0);
     const shown = n === 0 ? 0 : Math.min(n, max);
-    // 数量越大灯越小，避免太挤（12 盏以下不缩，最多缩到 0.35）
-    const densityScale = n <= 12 ? 1 : Math.max(0.35, 1 - (n - 12) * 0.012);
+    // 数量越大灯越小，避免太挤（12 盏以下不缩，最多缩到 0.4）
+    const densityScale = n <= 12 ? 1 : Math.max(0.4, 1 - (n - 12) * 0.008);
 
     container.innerHTML = '';
     const frag = document.createDocumentFragment();
     for (let i = 0; i < shown; i++) {
       const lantern = document.createElement('span');
       lantern.className = 'lantern';
-      const size = ((0.6 + Math.random() * 0.9) * densityScale).toFixed(2);
+      const size = ((0.75 + Math.random() * 1.05) * densityScale).toFixed(2);
       const dur = 15 + Math.random() * 17;
       const delay = -Math.random() * dur;
       const opacity = (minOpacity + Math.random() * (maxOpacity - minOpacity)).toFixed(2);

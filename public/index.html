@@ -213,7 +213,7 @@ function renderLanterns(n){
   const count = Math.max(0, Number(n) || 0);
   if(count === renderedLamps) return;
   renderedLamps = count;
-  Lanterns.render($('sky'), count, { max: 40 });
+  Lanterns.render($('sky'), count, { max: 32 });
 }
 function refreshLamps(){
   fetch('/api/lamps').then(r=>r.json()).then(d=>{
