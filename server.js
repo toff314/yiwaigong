@@ -285,9 +285,15 @@ app.get('/api/categories', (req, res) => {
 });
 
 app.get('/api/count', (req, res) => {
+  const kinds = db.prepare('SELECT kind, COUNT(*) c FROM media GROUP BY kind').all();
+  const photos = (kinds.find(k => k.kind === 'photo') || {}).c || 0;
+  const videos = (kinds.find(k => k.kind === 'video') || {}).c || 0;
+  const speed = Math.min(4, Math.max(.25, Number(getSettings().speed) || 1));
+  const minutes = Math.max(1, Math.round((photos * 11 + videos * 16) / 60 / speed));
   res.json({
     total: db.prepare('SELECT COUNT(*) c FROM media').get().c,
     messages: db.prepare('SELECT COUNT(*) c FROM messages').get().c,
+    minutes,
   });
 });
 

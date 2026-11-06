@@ -188,7 +188,7 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
     <button class="submit" id="again" style="margin-top:22px">继续添加</button>
   </div>
 
-  <div class="count-band">已收集 <b id="cnt">—</b> 份回忆</div>
+  <div class="count-band">已收集 <b id="cnt">—</b> 份回忆 · 约 <b id="mins">—</b> 分钟</div>
   <a class="count-band" id="msg-band" href="/messages.html" style="text-decoration:none;display:block">已有 <b id="msgcnt">—</b> 句留言 · 去看看 →</a>
   <div class="footer-note">技术支持：袁兀</div>
 
@@ -206,7 +206,7 @@ function showForm(){ $('done-view').style.display='none'; $('form-view').style.d
 function showDone(){ $('form-view').style.display='none'; $('done-view').style.display=''; }
 
 // 计数
-function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>{ $('cnt').textContent=d.total; if(d.messages!==undefined) $('msgcnt').textContent=d.messages; }).catch(()=>{}); }
+function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>{ $('cnt').textContent=d.total; if(d.messages!==undefined) $('msgcnt').textContent=d.messages; if(d.minutes!==undefined) $('mins').textContent=d.minutes; }).catch(()=>{}); }
 refreshCount(); setInterval(refreshCount, 15000);
 
 // 点亮心灯：每次点击记一次并显示；背景按心灯数量漂浮
