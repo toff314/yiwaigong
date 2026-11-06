@@ -76,9 +76,14 @@ button.submit{
   width:100%;margin-top:24px;background:linear-gradient(180deg,#2a251e,#221e18);
   border:1px solid var(--gold-dim);color:var(--gold);font-family:inherit;
   font-size:16px;letter-spacing:.4em;text-indent:.4em;padding:14px;border-radius:6px;cursor:pointer;transition:all .3s;
+  animation:submitGlow 2.6s ease-in-out infinite;
 }
-button.submit:disabled{opacity:.4;cursor:wait}
+button.submit:disabled{opacity:.4;cursor:wait;animation:none}
 button.submit:not(:disabled):active{border-color:var(--gold)}
+@keyframes submitGlow{
+  0%,100%{border-color:var(--gold-dim);box-shadow:0 0 0 rgba(201,168,106,0)}
+  50%{border-color:var(--gold);box-shadow:0 0 16px rgba(201,168,106,.28)}
+}
 .more-btn{width:100%;margin-top:18px;background:transparent;border:1px dashed var(--gold-dim);border-radius:8px;color:var(--muted);font-family:inherit;font-size:14px;letter-spacing:.15em;padding:12px;cursor:pointer;transition:all .3s}
 .more-btn.on{color:var(--gold);border-color:var(--gold);background:rgba(201,168,106,.08)}
 
@@ -94,6 +99,11 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
   border:1px solid var(--gold);
   box-shadow:0 0 0 1px rgba(201,168,106,.14),0 10px 34px rgba(201,168,106,.14);
   transition:all .3s;cursor:pointer;
+  animation:watchGlow 3s ease-in-out infinite;
+}
+@keyframes watchGlow{
+  0%,100%{opacity:.84;box-shadow:0 0 0 1px rgba(201,168,106,.14),0 10px 34px rgba(201,168,106,.12)}
+  50%{opacity:1;box-shadow:0 0 0 1px rgba(232,201,135,.42),0 10px 44px rgba(232,201,135,.34)}
 }
 .watch-btn .main{font-size:19px;color:var(--gold);letter-spacing:.32em;text-indent:.32em;font-weight:600}
 .watch-btn .sub{font-size:12px;color:var(--muted);letter-spacing:.22em;text-indent:.22em}
