@@ -91,7 +91,7 @@ fetch('/api/messages').then(r=>r.json()).then(d=>{
 });
 
 fetch('/api/lamps').then(r=>r.json()).then(d=>{
-  if(window.Lanterns) Lanterns.render($('sky'), Math.max(0, Number(d.lamps)||0), {max:14});
+  if(window.Lanterns) Lanterns.render($('sky'), Math.max(0, Number(d.lamps)||0), {max:32});
 }).catch(()=>{});
 </script>
 </body>

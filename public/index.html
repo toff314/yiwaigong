@@ -213,7 +213,7 @@ function renderLanterns(n){
   const count = Math.max(0, Number(n) || 0);
   if(count === renderedLamps) return;
   renderedLamps = count;
-  Lanterns.render($('sky'), count, { max: 20 });
+  Lanterns.render($('sky'), count, { max: 40 });
 }
 function refreshLamps(){
   fetch('/api/lamps').then(r=>r.json()).then(d=>{
@@ -230,7 +230,8 @@ $('watch-btn').addEventListener('click', async e=>{
     const d = await r.json();
     $('lamps').textContent = d.lamps;
     renderLanterns(d.lamps);
-    await new Promise(r=>setTimeout(r, 600));
+    toast(`您点亮了第 ${d.lamps} 盏心灯`);
+    await new Promise(r=>setTimeout(r, 1100));
   }catch{}
   location.href='/play.html';
 });
