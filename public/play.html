@@ -380,10 +380,12 @@ function flatScenes(items){
   for(const it of items) scenes.push(it.kind==='video'?{type:'video',items:[it]}:{type:'hero',items:[it]});
   return scenes;
 }
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
 const MESSAGE_EVERY = 9;   // 每 9 张照片后插一批留言
 const MESSAGE_BATCH = 3;   // 每批 3 条
 function insertMessages(scenes){
-  const msgs = (DATA.messages || []).slice();
+  const msgs = shuffle((DATA.messages || []).slice());
   if(!msgs.length) return scenes;
   let mi = 0, photoCount = 0;
   const lastHero = scenes.map(s => s.type).lastIndexOf('hero');
