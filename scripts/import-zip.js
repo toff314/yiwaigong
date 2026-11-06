@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 导入 yiwaigong.zip：按目录分类、统一命名、随机分配家属留言
+// 导入 yiwaigong.zip：按目录分类、统一命名、均衡分配家属留言
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -18,6 +18,7 @@ const { FAMILY, MESSAGES, normalizeCategory, categoryCode } = require('../lib/fa
 const CATEGORIES = {
   '早期': '早期',
   '平时': '平时',
+  '个影': '个影',
   '酒席': '酒席',
   '旅行': '旅行',
   '旅游': '旅行',
@@ -25,17 +26,91 @@ const CATEGORIES = {
   '合影': '合影',
 };
 
-function hash(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+const PREMIUM = ['叶玲', '叶文桂', '叶兰'];
+const SECOND = '黄迪';
+
+function targetCounts(total, current) {
+  const base = Math.floor(total / FAMILY.length);
+  const target = new Map();
+  for (const name of FAMILY) target.set(name, base);
+  for (const name of PREMIUM) target.set(name, base + 4);
+  target.set(SECOND, base + 2);
+  let diff = total - [...target.values()].reduce((a, b) => a + b, 0);
+  const others = FAMILY.filter(n => !PREMIUM.includes(n) && n !== SECOND);
+  others.sort((a, b) => diff < 0
+    ? (current.get(b) || 0) - (current.get(a) || 0)
+    : (current.get(a) || 0) - (current.get(b) || 0));
+  let i = 0;
+  while (diff !== 0) {
+    const name = others[i % others.length];
+    target.set(name, target.get(name) + (diff > 0 ? 1 : -1));
+    diff += diff > 0 ? -1 : 1;
+    i++;
   }
-  return h >>> 0;
+  return target;
 }
 
-function pick(arr, seed, offset = 0) {
-  return arr[(seed + offset * 7919) % arr.length];
+function assignUploaders(db, newFiles) {
+  const current = new Map(FAMILY.map(n => [n, 0]));
+  for (const row of db.prepare('SELECT uploader, COUNT(*) c FROM media GROUP BY uploader').all()) {
+    if (current.has(row.uploader)) current.set(row.uploader, row.c);
+  }
+  const total = [...current.values()].reduce((a, b) => a + b, 0) + newFiles.length;
+  const target = targetCounts(total, current);
+  const needs = new Map(FAMILY.map(n => [n, Math.max(0, (target.get(n) || 0) - (current.get(n) || 0))]));
+
+  let sum = [...needs.values()].reduce((a, b) => a + b, 0);
+  let diff = newFiles.length - sum;
+  const order = [...PREMIUM, SECOND, ...FAMILY.filter(n => !PREMIUM.includes(n) && n !== SECOND)];
+  let i = 0;
+  while (diff !== 0) {
+    const name = order[i % order.length];
+    const v = needs.get(name) + (diff > 0 ? 1 : -1);
+    if (v >= 0) { needs.set(name, v); diff += diff > 0 ? -1 : 1; }
+    i++;
+  }
+
+  const inCategory = new Map();
+  for (const row of db.prepare('SELECT category, uploader, COUNT(*) c FROM media GROUP BY category, uploader').all()) {
+    inCategory.set(row.category + '|' + row.uploader, row.c);
+  }
+  const rank = new Map(order.map((n, idx) => [n, idx]));
+  const result = [];
+  for (const f of newFiles) {
+    const candidates = FAMILY.filter(n => (needs.get(n) || 0) > 0);
+    candidates.sort((a, b) => {
+      const ra = inCategory.get(f.category + '|' + a) || 0;
+      const rb = inCategory.get(f.category + '|' + b) || 0;
+      if (ra !== rb) return ra - rb;
+      const na = needs.get(a), nb = needs.get(b);
+      if (na !== nb) return nb - na;
+      return (rank.get(a) ?? 999) - (rank.get(b) ?? 999);
+    });
+    const pick = candidates[0];
+    needs.set(pick, needs.get(pick) - 1);
+    inCategory.set(f.category + '|' + pick, (inCategory.get(f.category + '|' + pick) || 0) + 1);
+    result.push(pick);
+  }
+  return result;
+}
+
+function assignCaptions(db, newFiles) {
+  const used = new Map();
+  for (const row of db.prepare('SELECT category, caption, COUNT(*) c FROM media GROUP BY category, caption').all()) {
+    used.set(row.category + '|' + row.caption, row.c);
+  }
+  const result = [];
+  for (const f of newFiles) {
+    const pool = MESSAGES[f.category] || MESSAGES['未分类'];
+    let best = pool[0], bestCount = Infinity;
+    for (const m of pool) {
+      const c = used.get(f.category + '|' + m) || 0;
+      if (c < bestCount) { bestCount = c; best = m; }
+    }
+    used.set(f.category + '|' + best, bestCount + 1);
+    result.push(best);
+  }
+  return result;
 }
 
 async function main() {
@@ -59,54 +134,61 @@ async function main() {
     (filename, origname, kind, uploader, caption, year, featured, category, sort_order, created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?)`);
 
-  let added = 0, skipped = 0, failed = 0;
   const dirs = fs.readdirSync(TMP).filter(d => {
     try { return fs.statSync(path.join(TMP, d)).isDirectory(); } catch { return false; }
   }).sort();
 
+  const newFiles = [];
+  let skipped = 0;
   for (const dir of dirs) {
     if (dir.startsWith('.') || dir === '__MACOSX') continue;
-    const catLabel = CATEGORIES[dir] || dir;
-    const cat = { code: categoryCode(catLabel), label: catLabel };
+    const catLabel = CATEGORIES[dir] || normalizeCategory(dir) || dir;
     const files = fs.readdirSync(path.join(TMP, dir))
       .filter(f => /\.(jpe?g|png|webp|gif|mp4|mov|m4v|webm)$/i.test(f))
       .sort((a, b) => a.localeCompare(b, 'zh-CN'));
-
-    let seq = db.prepare('SELECT COALESCE(MAX(sort_order), -1) m FROM media WHERE category=?').get(cat.label).m + 1;
     for (const file of files) {
-      const src = path.join(TMP, dir, file);
-      const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(file);
-      const ext = isVideo ? '.mp4' : path.extname(file).toLowerCase();
-      if (exists.get(file, cat.label)) { skipped++; seq++; continue; }
-
-      const seed = hash(cat.code + '|' + file);
-      const uploader = pick(FAMILY, seed, 1);
-      const caption = pick(MESSAGES[cat.label] || ['音容宛在，思念长存'], seed, 0);
-      seq++;
-      let num = String(seq).padStart(3, '0');
-      let filename = `${cat.code}-${num}${isVideo ? ext : '.jpg'}`;
-      while (fs.existsSync(path.join(UPLOAD_DIR, filename))) {
-        seq++;
-        num = String(seq).padStart(3, '0');
-        filename = `${cat.code}-${num}${isVideo ? ext : '.jpg'}`;
-      }
-      try {
-        if (isVideo) {
-          try { compressVideoSync(src, path.join(UPLOAD_DIR, filename)); }
-          catch (e) { fs.copyFileSync(src, path.join(UPLOAD_DIR, filename)); }
-        } else {
-          await awaitCompress(src, path.join(UPLOAD_DIR, filename));
-        }
-      } catch (e) {
-        console.error('处理失败:', file, e.message);
-        failed++;
-        continue;
-      }
-      insert.run(filename, file, isVideo ? 'video' : 'photo', uploader, caption, '',
-        0, cat.label, seq - 1, Date.now() + added);
-      added++;
-      if (added % 20 === 0) console.log(`已导入 ${added} 个…`);
+      if (exists.get(file, catLabel)) { skipped++; continue; }
+      newFiles.push({ dir, file, category: catLabel, src: path.join(TMP, dir, file) });
     }
+  }
+
+  const uploaders = assignUploaders(db, newFiles);
+  const captions = assignCaptions(db, newFiles);
+
+  let added = 0, failed = 0;
+  const seqs = new Map();
+  for (let i = 0; i < newFiles.length; i++) {
+    const { file, category, src } = newFiles[i];
+    const isVideo = /\.(mp4|mov|m4v|webm)$/i.test(file);
+    const code = categoryCode(category);
+    if (!seqs.has(category)) {
+      seqs.set(category, db.prepare('SELECT COALESCE(MAX(sort_order), -1) m FROM media WHERE category=?').get(category).m + 1);
+    }
+    let seq = seqs.get(category);
+    let filename = `${code}-${String(seq + 1).padStart(3, '0')}${isVideo ? '.mp4' : '.jpg'}`;
+    while (fs.existsSync(path.join(UPLOAD_DIR, filename))) {
+      seq++;
+      filename = `${code}-${String(seq + 1).padStart(3, '0')}${isVideo ? '.mp4' : '.jpg'}`;
+    }
+    seqs.set(category, seq + 1);
+
+    try {
+      if (isVideo) {
+        try { compressVideoSync(src, path.join(UPLOAD_DIR, filename)); }
+        catch (e) { fs.copyFileSync(src, path.join(UPLOAD_DIR, filename)); }
+      } else {
+        await awaitCompress(src, path.join(UPLOAD_DIR, filename));
+      }
+    } catch (e) {
+      console.error('处理失败:', file, e.message);
+      failed++;
+      continue;
+    }
+
+    insert.run(filename, file, isVideo ? 'video' : 'photo', uploaders[i], captions[i], '',
+      0, category, seq, Date.now() + added);
+    added++;
+    if (added % 20 === 0) console.log(`已导入 ${added} 个…`);
   }
 
   db.close();

@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS stats (
 try { db.exec("ALTER TABLE media ADD COLUMN category TEXT DEFAULT ''"); } catch {}
 try { db.exec("ALTER TABLE media ADD COLUMN sort_order INTEGER DEFAULT 0"); } catch {}
 
-const KNOWN_CATEGORIES = ['早期', '平时', '酒席', '旅行', '生病', '合影'];
+const KNOWN_CATEGORIES = ['早期', '平时', '个影', '酒席', '旅行', '生病', '合影'];
 const DEFAULT_SETTINGS = {
   categoryOrder: [...KNOWN_CATEGORIES, '未分类'],
   playMode: 'category',       // category | sequence | random | single
