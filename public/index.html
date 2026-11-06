@@ -79,6 +79,8 @@ button.submit{
 }
 button.submit:disabled{opacity:.4;cursor:wait}
 button.submit:not(:disabled):active{border-color:var(--gold)}
+.more-btn{width:100%;margin-top:18px;background:transparent;border:1px dashed var(--gold-dim);border-radius:8px;color:var(--muted);font-family:inherit;font-size:14px;letter-spacing:.15em;padding:12px;cursor:pointer;transition:all .3s}
+.more-btn.on{color:var(--gold);border-color:var(--gold);background:rgba(201,168,106,.08)}
 
 .done-view{text-align:center;padding:30px 0}
 .done-view .big{font-size:22px;color:var(--gold);letter-spacing:.3em;text-indent:.3em;margin-bottom:14px}
@@ -140,55 +142,44 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
 
   <div class="section-title">添 加 记 忆</div>
 
-  <!-- 纯文字留言：首页直接可写 -->
-  <div class="card" id="msg-view">
-    <label>写一句留言</label>
-    <input type="text" id="msg-name" placeholder="您的名字" maxlength="30">
-    <div class="chips" id="msg-chips" style="margin-top:12px"></div>
-    <textarea id="msg-content" placeholder="选一句，或自己写…" maxlength="500" rows="3" style="margin-top:10px"></textarea>
-    <button class="submit" id="msg-send">留 下 这 句 话</button>
-    <div class="hint" style="text-align:center"><a class="text-link" href="/messages.html">看看大家留下的思念 →</a></div>
-  </div>
-
-  <!-- 上传照片 / 视频（需口令） -->
-  <div class="card" id="gate-view">
-    <label>进门口令</label>
-    <input type="text" id="gate-code" placeholder="请输入家人口令" autocomplete="off">
-    <button class="submit" id="gate-btn">开 启 记 忆</button>
-    <div class="hint" style="text-align:center">口令由家人统一告知，用于保护这份回忆</div>
-  </div>
-
-  <!-- 上传表单 -->
-  <div class="card" id="form-view" style="display:none">
+  <!-- 一句话 + 可选照片 -->
+  <div class="card" id="form-view">
     <label>您的名字</label>
-    <input type="text" id="uploader" placeholder="怎么称呼您（会展示在照片旁）" maxlength="30">
+    <input type="text" id="uploader" placeholder="怎么称呼您" maxlength="30">
 
-    <label>选择照片 / 视频</label>
-    <div class="drop" id="drop">
-      点此选择 · 可多选<br><span style="font-size:12px">照片 jpg/png · 视频 mp4/mov · 单个最大 500MB</span>
-      <input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm">
+    <label>写一句留言</label>
+    <div class="chips" id="msg-chips"></div>
+    <textarea id="msg-content" placeholder="选一句，或自己写…" maxlength="500" rows="3" style="margin-top:10px"></textarea>
+
+    <button type="button" class="more-btn" id="toggle-photo">＋ 添加照片 / 视频（可选）</button>
+
+    <div id="photo-panel" style="display:none">
+      <label>选择照片 / 视频</label>
+      <div class="drop" id="drop">
+        点此选择 · 可多选<br><span style="font-size:12px">照片 jpg/png · 视频 mp4/mov · 单个最大 500MB</span>
+        <input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm">
+      </div>
+      <div class="queue" id="queue"></div>
+
+      <label>这段回忆属于哪个目录</label>
+      <select id="category">
+        <option value="">未分类</option>
+      </select>
+
+      <label>上传口令</label>
+      <input type="text" id="gate-code" placeholder="上传照片需要家人口令" autocomplete="off">
+      <div class="hint">只留言不需要口令；口令由家人统一告知。</div>
     </div>
-    <div class="queue" id="queue"></div>
 
-    <label>这段回忆属于哪个目录</label>
-    <select id="category">
-      <option value="">未分类</option>
-    </select>
-    <div class="hint">选择后会自动按「目录-序号」统一命名；不填寄语时，会为您自动配一条思念留言。</div>
-
-    <label>寄语（可选，对所有本次上传的素材生效）</label>
-    <div class="chips" id="chips"></div>
-    <input type="text" id="caption" placeholder="或写一句您想对老人说的话" maxlength="200" style="margin-top:10px">
-
-    <button class="submit" id="send" disabled>交 付 回 忆</button>
-    <div class="hint" style="text-align:center">照片将自动压缩以方便传输，视频保留原样</div>
+    <button class="submit" id="send">留 下 这 份 记 忆</button>
+    <div class="hint" style="text-align:center"><a class="text-link" href="/messages.html">看看大家留下的思念 →</a></div>
   </div>
 
   <!-- 完成页 -->
   <div class="card done-view" id="done-view" style="display:none">
     <div class="big">谢 谢 您</div>
     <p>您的回忆已妥为收存<br>将在告别仪式的屏幕上与大家见面</p>
-    <button class="submit" id="again" style="margin-top:22px">继续上传</button>
+    <button class="submit" id="again" style="margin-top:22px">继续添加</button>
   </div>
 
   <div class="count-band">已收集 <b id="cnt">—</b> 份回忆</div>
@@ -198,14 +189,14 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
 
 <script src="/lanterns.js"></script>
 <script>
-const PRESETS = ['外公，我们想您','您的音容笑貌永存心间','怀念和您在一起的日子','一路走好，愿天堂没有病痛','谢谢您曾经的爱与教诲','岁月带不走我们的思念'];
 const MSG_PRESETS = ['外公，今天又想起您了','您不在的日子，我们都很想您','愿您在那边一切安好','您的样子，我们一直记得','想再听您叫一声我的名字','家里都挺好的，您放心','谢谢您疼了我们这么多年','您留下的好，我们接着往下传'];
 let code = sessionStorage.getItem('mem_code') || '';
 let files = [];
 
 const $ = id => document.getElementById(id);
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
-function show(v){ ['gate-view','form-view','done-view'].forEach(x=>$(x).style.display = x===v?'':'none'); }
+function showForm(){ $('done-view').style.display='none'; $('form-view').style.display=''; }
+function showDone(){ $('form-view').style.display='none'; $('done-view').style.display=''; }
 
 // 目录
 const CATEGORY_FALLBACK=['早期','平时','酒席','旅行','生病','合影'];
@@ -253,27 +244,15 @@ $('watch-btn').addEventListener('click', async e=>{
   location.href='/play.html';
 });
 
-// 口令门
-function tryGate(){
-  const v = $('gate-code').value.trim();
-  if(!v) return toast('请输入口令');
-  code = v; sessionStorage.setItem('mem_code', v);
-  showContent();
-}
-function showContent(){
-  $('gate-view').style.display='none';
-  show('form-view');
-}
-$('gate-btn').onclick = tryGate;
-$('gate-code').addEventListener('keydown', e=>{ if(e.key==='Enter') tryGate(); });
-if(code) showContent();
+if(code) $('gate-code').value = code;
 
-// 预置寄语（照片上传用）
-PRESETS.forEach(p=>{
-  const c=document.createElement('div'); c.className='chip'; c.textContent=p;
-  c.onclick=()=>{ document.querySelectorAll('#chips .chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); $('caption').value=p; };
-  $('chips').appendChild(c);
-});
+// 展开 / 收起照片上传
+$('toggle-photo').onclick = ()=>{
+  const open = $('photo-panel').style.display === 'none';
+  $('photo-panel').style.display = open ? '' : 'none';
+  $('toggle-photo').classList.toggle('on', open);
+  $('toggle-photo').textContent = open ? '− 收起照片 / 视频' : '＋ 添加照片 / 视频（可选）';
+};
 
 // 留言模版（与照片寄语不重复）
 MSG_PRESETS.forEach(p=>{
@@ -299,66 +278,82 @@ function renderQueue(){
   $('queue').innerHTML = files.map((f,i)=>
     `<div class="qitem"><span>${i+1}. ${f.name.length>28?f.name.slice(0,26)+'…':f.name}</span><span class="st" id="q${i}">待传</span></div>`
   ).join('');
-  $('send').disabled = files.length===0;
 }
 
-// 上传
+// 提交：留言 + 可选照片
 $('send').onclick = async ()=>{
-  if(!files.length) return;
   const uploader = $('uploader').value.trim();
-  if(!uploader) return toast('请先填写您的名字');
-  $('send').disabled = true;
-  const caption = $('caption').value.trim();
-  let ok=0;
-  for(let i=0;i<files.length;i++){
-    const st=$('q'+i); st.textContent='上传中…'; st.className='st';
-    try{
-      const fd=new FormData();
-      fd.append('code', code); fd.append('uploader', uploader); fd.append('caption', caption);
-      fd.append('category', $('category').value);
-      fd.append('files', files[i]);
-      const r = await fetch('/api/upload',{method:'POST',body:fd});
-      const d = await r.json();
-      if(!r.ok || !d.ok) throw new Error(d.error||'失败');
-      st.textContent='✓ 已收存'; ok++;
-      refreshCount();
-    }catch(err){ st.textContent='✗ '+err.message; st.className='st err'; }
-  }
-  if(ok===files.length){
-    files=[]; $('files').value=''; renderQueue();
-    show('done-view');
-  } else {
-    toast('部分上传失败，可重试失败项');
-    $('send').disabled=false;
-  }
-};
-$('again').onclick = ()=>{ show('form-view'); $('send').disabled=true; };
-
-// 纯文字留言
-$('msg-send').onclick = async ()=>{
-  const name = $('msg-name').value.trim();
   const content = $('msg-content').value.trim();
-  if(!name) return toast('请先填写您的名字');
-  if(!content) return toast('请写下想说的话');
-  $('msg-send').disabled = true;
-  try{
-    const r = await fetch('/api/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ code, name, content }),
-    });
-    const d = await r.json();
-    if(!r.ok || !d.ok) throw new Error(d.error || '留言失败');
-    $('msg-content').value = '';
-    document.querySelectorAll('#msg-chips .chip').forEach(x=>x.classList.remove('on'));
-    toast('留言已收下，谢谢您');
-    refreshCount();
-  }catch(err){
-    toast(err.message || '留言失败，请稍后再试');
-  }finally{
-    $('msg-send').disabled = false;
+  if(!uploader) return toast('请先填写您的名字');
+  if(!files.length && !content) return toast('写一句话，或添加照片');
+  const codeVal = $('gate-code').value.trim();
+  if(files.length && !codeVal) return toast('上传照片请先填写口令');
+
+  $('send').disabled = true;
+  let ok = 0, failed = 0;
+  const remain = [];
+  if(files.length){
+    for(let i=0;i<files.length;i++){
+      const st=$('q'+i); st.textContent='上传中…'; st.className='st';
+      try{
+        const fd=new FormData();
+        fd.append('code', codeVal);
+        fd.append('uploader', uploader);
+        fd.append('caption', content);
+        fd.append('category', $('category').value);
+        fd.append('files', files[i]);
+        const r = await fetch('/api/upload',{method:'POST',body:fd});
+        const d = await r.json();
+        if(!r.ok || !d.ok) throw new Error(d.error||'失败');
+        st.textContent='✓ 已收存'; ok++;
+      }catch(err){
+        st.textContent='✗ '+err.message; st.className='st err';
+        failed++; remain.push(files[i]);
+      }
+    }
+    if(ok){ sessionStorage.setItem('mem_code', codeVal); code = codeVal; }
+    if(failed){
+      files = remain;
+      $('files').value = '';
+      renderQueue();
+      toast(ok ? `已收存 ${ok} 个，${failed} 个失败，可再试` : '上传失败，请检查口令后重试');
+      $('send').disabled = false;
+      refreshCount();
+      return;
+    }
   }
+
+  let msgOk = false;
+  if(content){
+    try{
+      const r = await fetch('/api/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ code: codeVal, name: uploader, content }),
+      });
+      const d = await r.json();
+      if(!r.ok || !d.ok) throw new Error(d.error || '留言失败');
+      msgOk = true;
+    }catch(err){
+      toast(err.message || '留言失败');
+    }
+  }
+
+  if(!files.length && content && !msgOk){
+    $('send').disabled = false;
+    refreshCount();
+    return;
+  }
+  if(content && !msgOk) toast('照片已收存，留言保存失败，可稍后单独留言');
+
+  files=[]; $('files').value=''; renderQueue();
+  $('msg-content').value='';
+  document.querySelectorAll('#msg-chips .chip').forEach(x=>x.classList.remove('on'));
+  refreshCount();
+  $('send').disabled = false;
+  showDone();
 };
+$('again').onclick = ()=>{ showForm(); $('send').disabled=false; };
 </script>
 </body>
 </html>
