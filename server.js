@@ -59,6 +59,12 @@ CREATE TABLE IF NOT EXISTS stats (
   key TEXT PRIMARY KEY,
   value INTEGER NOT NULL DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
 `);
 try { db.exec("ALTER TABLE media ADD COLUMN category TEXT DEFAULT ''"); } catch {}
 try { db.exec("ALTER TABLE media ADD COLUMN sort_order INTEGER DEFAULT 0"); } catch {}
@@ -277,7 +283,30 @@ app.get('/api/categories', (req, res) => {
 });
 
 app.get('/api/count', (req, res) => {
-  res.json({ total: db.prepare('SELECT COUNT(*) c FROM media').get().c });
+  res.json({
+    total: db.prepare('SELECT COUNT(*) c FROM media').get().c,
+    messages: db.prepare('SELECT COUNT(*) c FROM messages').get().c,
+  });
+});
+
+// 纯文字留言：不用上传照片也能留一句话
+app.get('/api/messages', (req, res) => {
+  const rows = db.prepare('SELECT id, name, content, created_at FROM messages ORDER BY id DESC').all();
+  res.json({ items: rows, total: rows.length });
+});
+app.post('/api/messages', (req, res) => {
+  if (req.body.code !== CONFIG.accessCode) return res.status(403).json({ error: '口令不正确' });
+  const name = String(req.body.name || '').trim().slice(0, 30);
+  const content = String(req.body.content || '').trim().slice(0, 500);
+  if (!name) return res.status(400).json({ error: '请填写您的名字' });
+  if (!content) return res.status(400).json({ error: '请写下想说的话' });
+  const info = db.prepare('INSERT INTO messages (name, content, created_at) VALUES (?,?,?)')
+    .run(name, content, Date.now());
+  res.json({
+    ok: true,
+    id: info.lastInsertRowid,
+    total: db.prepare('SELECT COUNT(*) c FROM messages').get().c,
+  });
 });
 
 // 「点亮心灯」计数：点击累加，并每小时自动增加 1 盏；持久化在 stats 表

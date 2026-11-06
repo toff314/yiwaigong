@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>忆·外公 · 留言墙</title>
+<link rel="stylesheet" href="/lanterns.css">
+<style>
+:root{
+  --bg:#141210; --bg2:#1c1916; --ink:#e8e2d5; --muted:#9a9284;
+  --gold:#c9a86a; --gold-dim:#8a7448; --line:rgba(201,168,106,.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{
+  background:
+    radial-gradient(900px 540px at 50% -8%, rgba(201,168,106,.10), transparent 65%),
+    radial-gradient(760px 520px at 50% 118%, rgba(201,168,106,.05), transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font-family:"Noto Serif SC","Songti SC","STSong",serif;
+  display:flex; flex-direction:column; align-items:center;
+  min-height:100vh; padding:24px 16px 56px;
+  position:relative;
+}
+.top-mark,.msg-list,.count-band,.actions{position:relative;z-index:1}
+.top-mark{width:100%;max-width:520px;text-align:center;padding:32px 0 8px}
+.chrys{width:44px;height:44px;margin:0 auto 18px;opacity:.9;filter:drop-shadow(0 0 12px rgba(201,168,106,.25))}
+h1{font-size:34px;font-weight:600;letter-spacing:.35em;text-indent:.35em;color:var(--ink);text-shadow:0 0 28px rgba(201,168,106,.28)}
+.verse{margin-top:16px;font-size:15px;color:var(--muted);letter-spacing:.15em;line-height:2}
+.divider{width:64px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto}
+.count-band{width:100%;max-width:520px;text-align:center;margin-top:6px;font-size:14px;color:var(--muted);letter-spacing:.15em}
+.count-band b{color:var(--gold);font-size:20px;font-weight:600;margin:0 4px}
+.msg-list{width:100%;max-width:520px;margin-top:26px;display:flex;flex-direction:column;gap:14px}
+.msg{background:linear-gradient(180deg,rgba(30,27,23,.92),rgba(24,21,18,.95));border:1px solid var(--line);border-radius:10px;padding:20px 20px 16px;box-shadow:0 14px 36px rgba(0,0,0,.28)}
+.msg .txt{font-size:16px;line-height:2;letter-spacing:.05em;white-space:pre-wrap;word-break:break-word}
+.msg .meta{margin-top:12px;font-size:12px;color:var(--muted);letter-spacing:.08em;text-align:right}
+.msg .meta .who{color:var(--gold)}
+.empty{width:100%;max-width:520px;text-align:center;color:var(--muted);font-size:14px;line-height:2.2;margin-top:40px;letter-spacing:.1em}
+.actions{width:100%;max-width:520px;display:flex;gap:12px;margin-top:28px}
+.actions a{flex:1;text-align:center;text-decoration:none;font-size:14px;letter-spacing:.18em;text-indent:.18em;padding:13px 8px;border-radius:8px;border:1px solid var(--line);color:var(--gold);background:rgba(201,168,106,.08);transition:all .3s}
+.actions a:active{border-color:var(--gold);background:rgba(201,168,106,.16)}
+@media (max-width:400px){ h1{font-size:28px} }
+</style>
+</head>
+<body>
+  <div class="sky fixed" id="sky" aria-hidden="true"></div>
+  <div class="top-mark">
+    <div class="chrys">
+      <svg viewBox="0 0 48 48" fill="none"><g stroke="#c9a86a" stroke-width="1.1" opacity=".85">
+        <circle cx="24" cy="24" r="3.2"/>
+        <g><ellipse cx="24" cy="13" rx="4.4" ry="7.2"/><ellipse cx="24" cy="35" rx="4.4" ry="7.2"/><ellipse cx="13" cy="24" rx="7.2" ry="4.4"/><ellipse cx="35" cy="24" rx="7.2" ry="4.4"/></g>
+        <g opacity=".55" transform="rotate(45 24 24)"><ellipse cx="24" cy="13.5" rx="3.8" ry="6.6"/><ellipse cx="24" cy="34.5" rx="3.8" ry="6.6"/><ellipse cx="13.5" cy="24" rx="6.6" ry="3.8"/><ellipse cx="34.5" cy="24" rx="6.6" ry="3.8"/></g>
+      </g></svg>
+    </div>
+    <h1>忆·外公</h1>
+    <div class="verse">他们想对您说的话<br>叶玉生 · 1938 — 2026</div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="count-band">已有 <b id="total">—</b> 句留言</div>
+  <div class="msg-list" id="list"></div>
+  <div class="empty" id="empty" style="display:none">还没有人留言<br>去首页写下第一句吧</div>
+
+  <div class="actions">
+    <a href="/">返回首页</a>
+    <a href="/play.html">进入相册</a>
+  </div>
+
+<script src="/lanterns.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(ts){
+  const d = new Date(ts);
+  if(Number.isNaN(d.getTime())) return '';
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+fetch('/api/messages').then(r=>r.json()).then(d=>{
+  const items = d.items || [];
+  $('total').textContent = items.length;
+  $('empty').style.display = items.length ? 'none' : '';
+  $('list').innerHTML = items.map(m=>`<div class="msg">
+    <div class="txt">${esc(m.content)}</div>
+    <div class="meta"><span class="who">— ${esc(m.name)}</span>${m.created_at?` · ${fmt(m.created_at)}`:''}</div>
+  </div>`).join('');
+}).catch(()=>{
+  $('total').textContent = '—';
+});
+
+fetch('/api/lamps').then(r=>r.json()).then(d=>{
+  if(window.Lanterns) Lanterns.render($('sky'), Math.max(0, Number(d.lamps)||0), {max:14});
+}).catch(()=>{});
+</script>
+</body>
+</html>

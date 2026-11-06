@@ -41,6 +41,11 @@ input[type=text]:focus{border-bottom-color:var(--gold)}
 input::placeholder{color:#5a5346}
 select{width:100%;background:#141210;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-family:inherit;font-size:16px;padding:10px 8px;outline:none;letter-spacing:.05em}
 select:focus{border-color:var(--gold)}
+textarea{width:100%;background:#141210;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-family:inherit;font-size:16px;line-height:1.9;padding:12px;outline:none;resize:vertical;letter-spacing:.05em}
+textarea:focus{border-color:var(--gold)}
+textarea::placeholder{color:#5a5346}
+.text-link{display:inline-block;color:var(--gold);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px}
+.text-link:active{border-bottom-color:var(--gold)}
 
 /* 寄语快捷选择 */
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
@@ -165,12 +170,23 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
     <button class="submit" id="again" style="margin-top:22px">继续上传</button>
   </div>
 
+  <!-- 纯文字留言 -->
+  <div class="card" id="msg-view" style="display:none">
+    <label>只想留句话？</label>
+    <div class="hint" style="margin-top:0;margin-bottom:10px">不用传照片，写下想对老人说的话就好。</div>
+    <input type="text" id="msg-name" placeholder="您的名字" maxlength="30">
+    <textarea id="msg-content" placeholder="写下想说的话…" maxlength="500" rows="4" style="margin-top:10px"></textarea>
+    <button class="submit" id="msg-send">留 下 这 句 话</button>
+    <div class="hint" style="text-align:center"><a class="text-link" href="/messages.html">看看大家留下的思念 →</a></div>
+  </div>
+
   <div class="count-band">已收集 <b id="cnt">—</b> 份回忆</div>
   <a class="watch-btn" id="watch-btn" href="/play.html">
     <span class="main"><span class="lamp-dot"></span>点亮心灯 · 忆·外公</span>
     <span class="sub">进入追思相册</span>
   </a>
   <div class="count-band lamp-band">已有 <b id="lamps">—</b> 盏心灯亮起</div>
+  <a class="count-band" id="msg-band" href="/messages.html" style="text-decoration:none;display:block">已有 <b id="msgcnt">—</b> 句留言 · 去看看 →</a>
 
   <div class="toast" id="toast"></div>
 
@@ -199,7 +215,7 @@ function loadCategories(){
 loadCategories();
 
 // 计数
-function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>$('cnt').textContent=d.total).catch(()=>{}); }
+function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>{ $('cnt').textContent=d.total; if(d.messages!==undefined) $('msgcnt').textContent=d.messages; }).catch(()=>{}); }
 refreshCount(); setInterval(refreshCount, 15000);
 
 // 点亮心灯：每次点击记一次并显示；背景按心灯数量漂浮
@@ -235,11 +251,16 @@ function tryGate(){
   const v = $('gate-code').value.trim();
   if(!v) return toast('请输入口令');
   code = v; sessionStorage.setItem('mem_code', v);
-  $('gate-view').style.display='none'; show('form-view');
+  showContent();
+}
+function showContent(){
+  $('gate-view').style.display='none';
+  show('form-view');
+  $('msg-view').style.display='';
 }
 $('gate-btn').onclick = tryGate;
 $('gate-code').addEventListener('keydown', e=>{ if(e.key==='Enter') tryGate(); });
-if(code) { $('gate-view').style.display='none'; show('form-view'); }
+if(code) showContent();
 
 // 预置寄语
 PRESETS.forEach(p=>{
@@ -292,6 +313,31 @@ $('send').onclick = async ()=>{
   }
 };
 $('again').onclick = ()=>{ show('form-view'); $('send').disabled=true; };
+
+// 纯文字留言
+$('msg-send').onclick = async ()=>{
+  const name = $('msg-name').value.trim();
+  const content = $('msg-content').value.trim();
+  if(!name) return toast('请先填写您的名字');
+  if(!content) return toast('请写下想说的话');
+  $('msg-send').disabled = true;
+  try{
+    const r = await fetch('/api/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ code, name, content }),
+    });
+    const d = await r.json();
+    if(!r.ok || !d.ok) throw new Error(d.error || '留言失败');
+    $('msg-content').value = '';
+    toast('留言已收下，谢谢您');
+    refreshCount();
+  }catch(err){
+    toast(err.message || '留言失败，请稍后再试');
+  }finally{
+    $('msg-send').disabled = false;
+  }
+};
 </script>
 </body>
 </html>
