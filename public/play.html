@@ -58,6 +58,9 @@ body{font-family:"Noto Serif SC","Songti SC","STSong",serif;color:var(--ink)}
 .black .yr{color:var(--gold);font-size:clamp(22px,4vw,34px);letter-spacing:.45em;text-indent:.45em;text-align:center}
 .black .txt{margin:20px auto 0;color:var(--muted);font-size:clamp(24px,4.2vw,38px);letter-spacing:.26em;text-indent:.26em;text-align:center;text-shadow:0 0 26px rgba(0,0,0,.8)}
 .black .line{width:84px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:26px auto}
+.msgscene .quote{color:rgba(201,168,106,.32);font-size:clamp(46px,8vw,88px);line-height:1;margin-bottom:4px}
+.msgscene .txt{margin:0 auto;max-width:78vw;color:var(--ink);font-size:clamp(26px,4.6vw,46px);line-height:1.85;letter-spacing:.08em;text-shadow:0 2px 24px #000;white-space:pre-wrap;word-break:break-word}
+.msgscene .who{margin-top:26px;color:var(--gold);font-size:clamp(16px,2.4vw,22px);letter-spacing:.25em;text-indent:.25em}
 
 /* 角标 & 水印 */
 #corner{position:fixed;left:3vw;bottom:3vh;z-index:60;color:rgba(232,201,135,.72);font-size:clamp(12px,1.7vw,15px);letter-spacing:.28em;pointer-events:none}
@@ -105,6 +108,7 @@ setInterval(()=>{
 }, 60 * 1000);
 const params=new URLSearchParams(location.search);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const mediaURL = f => (f.startsWith('media/')||f.startsWith('music/') ? '/' : '/media/')+encodeURIComponent(f.split('/').pop());
 const assetURL = p => !p ? '' : p.startsWith('media/') ? '/media/'+encodeURIComponent(p.slice(6)) : p.startsWith('main/') ? '/main/'+encodeURIComponent(p.slice(5)) : p;
 const coverAsset = p => (p==='main/main-cover-landscape.jpg' && window.innerHeight>window.innerWidth) ? '/main/main-cover-portrait.jpg' : assetURL(p);
@@ -242,6 +246,15 @@ async function categoryCard(name, count){
   n.style.opacity=0; await sleep(Math.max(1500, dur(1600))); n.remove();
 }
 
+/* ---------- 留言卡 ---------- */
+async function messageScene(msg){
+  const n=el(`<div class="black msgscene"><div class="sky"></div><div class="quote">“</div><div class="txt">${esc(msg.content)}</div><div class="who">— ${esc(msg.name)}</div></div>`);
+  if(window.Lanterns) Lanterns.render(n.querySelector('.sky'), lampCount, {max:4, minOpacity:.12, maxOpacity:.3});
+  stage.appendChild(n); await sleep(120); n.style.opacity=1;
+  await sleep(Math.max(4500, dur(7000)));
+  n.style.opacity=0; await sleep(Math.max(1500, dur(1600))); n.remove();
+}
+
 /* ---------- 留影墙 ---------- */
 async function wallScene(photos){
   const nodes = photos.slice(0, 8).map(p=>{
@@ -367,19 +380,41 @@ function flatScenes(items){
   for(const it of items) scenes.push(it.kind==='video'?{type:'video',items:[it]}:{type:'hero',items:[it]});
   return scenes;
 }
+const MESSAGE_EVERY = 9;   // 每 9 张照片后插一批留言
+const MESSAGE_BATCH = 3;   // 每批 3 条
+function insertMessages(scenes){
+  const msgs = (DATA.messages || []).slice();
+  if(!msgs.length) return scenes;
+  let mi = 0, photoCount = 0;
+  const lastHero = scenes.map(s => s.type).lastIndexOf('hero');
+  const out = [];
+  for(let i=0;i<scenes.length;i++){
+    const s = scenes[i];
+    out.push(s);
+    if(s.type !== 'hero') continue;
+    photoCount++;
+    if(photoCount < MESSAGE_EVERY || mi >= msgs.length) continue;
+    photoCount = 0;
+    if(i >= lastHero) continue;
+    for(let k=0;k<MESSAGE_BATCH && mi<msgs.length;k++,mi++){
+      out.push({ type:'msg', data: msgs[mi] });
+    }
+  }
+  return out;
+}
 function buildPlan(){
   const mode=settings.playMode;
   const head=settings.coverImage?[{type:'cover',src:coverAsset(settings.coverImage)}]:[];
-  if(mode==='random') return head.concat(flatScenes(DATA.items));
+  if(mode==='random') return insertMessages(head.concat(flatScenes(DATA.items)));
   let groups=DATA.groups||[];
   if(mode==='single' && settings.singleCategory!=='all') groups=groups.filter(g=>g.category===settings.singleCategory);
-  if(mode==='sequence') return head.concat(flatScenes(DATA.items));
+  if(mode==='sequence') return insertMessages(head.concat(flatScenes(DATA.items)));
   const scenes=head.slice();
   for(const g of groups){
     if(settings.showCategoryCard) scenes.push({type:'card', category:g.category, count:g.items.length});
     scenes.push(...groupScenes(g.items));
   }
-  return scenes;
+  return insertMessages(scenes);
 }
 
 let running=false;
@@ -391,6 +426,7 @@ async function startLoop(){
     for(const s of scenes){
       if(s.type==='cover'){ try{ await coverScene(s.src); }catch(e){} }
       else if(s.type==='card'){ try{ await categoryCard(s.category,s.count); }catch(e){} }
+      else if(s.type==='msg'){ try{ await messageScene(s.data); }catch(e){} }
       else if(s.type==='wall'){ try{ await wallScene(s.items); }catch(e){} }
       else if(s.type==='hero'){ for(const p of s.items){ try{ await heroScene(p); }catch(e){} } }
       else if(s.type==='video'){ try{ await videoScene(s.items[0], s.showPre!==false); }catch(e){} }

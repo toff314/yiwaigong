@@ -270,6 +270,7 @@ app.get('/api/playlist', (req, res) => {
   const groups = groupByCategory(items, categories);
   res.json({
     title: CONFIG.title, subtitle: CONFIG.subtitle, settings, items, groups,
+    messages: db.prepare('SELECT id, name, content, created_at FROM messages ORDER BY id ASC').all(),
     categories: categories.map(name => ({ name, count: db.prepare('SELECT COUNT(*) c FROM media WHERE COALESCE(NULLIF(category,\'\'),\'未分类\')=?').get(name).c })),
     total: items.length,
   });
