@@ -569,6 +569,8 @@ app.post('/api/admin/export', requireAdmin, async (req, res) => {
 
   const manifest = {
     title: CONFIG.title, subtitle: CONFIG.subtitle, settings,
+    lamps: lampCount(),
+    messages: db.prepare('SELECT id, name, content, created_at FROM messages ORDER BY id ASC').all(),
     items: [],
   };
   for (const it of items) {
