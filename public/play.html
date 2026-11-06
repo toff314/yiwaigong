@@ -62,6 +62,25 @@ body{font-family:"Noto Serif SC","Songti SC","STSong",serif;color:var(--ink)}
 .msgscene .txt{margin:0 auto;max-width:78vw;color:var(--ink);font-size:clamp(26px,4.6vw,46px);line-height:1.85;letter-spacing:.08em;text-shadow:0 2px 24px #000;white-space:pre-wrap;word-break:break-word}
 .msgscene .who{margin-top:26px;color:var(--gold);font-size:clamp(16px,2.4vw,22px);letter-spacing:.25em;text-indent:.25em}
 
+/* ---- 结尾页：所有留言 + 心灯升空 ---- */
+.ending{background:radial-gradient(ellipse at 50% 115%,#26190e 0%,#070605 62%)}
+.end-title{position:absolute;top:6.5vh;left:0;right:0;text-align:center;color:var(--gold);font-size:clamp(20px,3.2vw,30px);letter-spacing:.42em;text-indent:.42em;z-index:4;text-shadow:0 0 26px rgba(232,201,135,.3)}
+.end-sub{position:absolute;top:13.5vh;left:0;right:0;text-align:center;color:var(--muted);font-size:clamp(13px,1.8vw,16px);letter-spacing:.22em;z-index:4}
+.end-sub .end-num{color:var(--gold);font-size:1.15em}
+.end-clip{position:absolute;left:50%;transform:translateX(-50%);top:19vh;width:min(88vw,1080px);height:64vh;overflow:hidden;z-index:3;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 10%,#000 90%,transparent 100%)}
+.end-msgs{columns:2;column-gap:26px}
+.em{break-inside:avoid;margin:0 0 14px;padding:12px 15px;border:1px solid rgba(201,168,106,.15);border-radius:8px;background:rgba(22,18,14,.55);backdrop-filter:blur(2px)}
+.em .et{font-size:clamp(13px,1.6vw,18px);line-height:1.9;color:var(--ink);letter-spacing:.04em}
+.em .ew{margin-top:7px;font-size:11px;color:var(--gold);letter-spacing:.16em;text-align:right}
+.end-big-lantern{position:absolute;left:50%;bottom:-34vh;width:120px;height:158px;transform:translate(-50%,0);opacity:0;transition:opacity 2.5s;z-index:1;pointer-events:none}
+.end-big-lantern.rise{opacity:.95;animation:bigRise 36s linear forwards}
+.end-big-lantern .lamp-body{position:absolute;inset:0;border-radius:48% 48% 44% 44%;background:radial-gradient(circle at 50% 38%,#fff6cf 0%,#ffcf78 32%,#e79a3c 62%,#7a4212 100%);box-shadow:0 0 60px rgba(255,176,74,.55),0 0 160px rgba(255,146,40,.3),0 0 340px rgba(255,120,30,.16);animation:lanternSway 6s ease-in-out infinite alternate}
+.end-big-lantern .lamp-body::before{content:'';position:absolute;left:50%;top:-4%;width:34%;height:8%;transform:translateX(-50%);border-radius:3px;background:#7a4a1e}
+.end-big-lantern .lamp-body::after{content:'';position:absolute;left:50%;bottom:-12%;width:3px;height:14%;transform:translateX(-50%);background:linear-gradient(#ffcf78,rgba(255,207,120,0))}
+.end-big-lantern i{position:absolute;left:50%;top:32%;width:48%;height:48%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,#fffdf2 0%,#ffd98a 45%,rgba(255,180,70,0) 72%);animation:lampFlicker 2.8s ease-in-out infinite}
+@keyframes bigRise{from{transform:translate(-50%,0)}to{transform:translate(-50%,-165vh)}}
+@media (max-width:640px){.end-msgs{columns:1}.end-clip{width:92vw}}
+
 /* 角标 & 水印 */
 #corner{position:fixed;left:3vw;bottom:3vh;z-index:60;color:rgba(232,201,135,.72);font-size:clamp(12px,1.7vw,15px);letter-spacing:.28em;pointer-events:none}
 #exit{position:fixed;top:2vh;right:2.5vw;z-index:61;color:rgba(232,226,213,.35);font-size:20px;background:none;border:none;cursor:pointer;letter-spacing:.1em}
@@ -255,6 +274,45 @@ async function messageScene(msg){
   n.style.opacity=0; await sleep(Math.max(1500, dur(1600))); n.remove();
 }
 
+/* ---------- 结尾：所有留言 + 心灯升空 ---------- */
+async function endingScene(){
+  const msgs = DATA.messages || [];
+  const total = Math.max(22000, dur(40000));
+  const n = el(`<div class="black ending">
+    <div class="sky end-sky"></div>
+    <div class="end-big-lantern"><span class="lamp-body"><i></i></span></div>
+    <div class="end-title">他们想对您说的话</div>
+    <div class="end-sub"><span class="end-num">0</span> 盏心灯，陪着您慢慢走</div>
+    <div class="end-clip"><div class="end-msgs">${msgs.map(m=>`<div class="em"><div class="et">${esc(m.content)}</div><div class="ew">— ${esc(m.name)}</div></div>`).join('')}</div></div>
+  </div>`);
+  stage.appendChild(n);
+  if(window.Lanterns) Lanterns.render(n.querySelector('.end-sky'), lampCount, {max:60, minOpacity:.14, maxOpacity:.45});
+  // 大灯缓缓升空
+  const big = n.querySelector('.end-big-lantern');
+  big.style.animationDuration = Math.max(12000, total - 2500) + 'ms';
+  requestAnimationFrame(()=> big.classList.add('rise'));
+  // 心灯计数
+  const numEl = n.querySelector('.end-num');
+  const target = Math.max(0, lampCount);
+  const t0 = performance.now();
+  const step = t => {
+    const p = Math.min(1, (t - t0) / 2600);
+    numEl.textContent = Math.round(target * p);
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+  // 留言瀑布缓慢上滚
+  await sleep(60);
+  const list = n.querySelector('.end-msgs');
+  const dist = list.scrollHeight - list.parentElement.clientHeight;
+  if (dist > 0) {
+    list.animate([{transform:'translateY(0)'},{transform:`translateY(${-dist}px)`}],
+      {duration: Math.max(8000, total - 4500), easing:'linear', fill:'forwards'});
+  }
+  await sleep(total);
+  n.style.opacity = 0; await sleep(Math.max(1500, dur(1800))); n.remove();
+}
+
 /* ---------- 留影墙 ---------- */
 async function wallScene(photos){
   const nodes = photos.slice(0, 8).map(p=>{
@@ -433,6 +491,7 @@ async function startLoop(){
       else if(s.type==='hero'){ for(const p of s.items){ try{ await heroScene(p); }catch(e){} } }
       else if(s.type==='video'){ try{ await videoScene(s.items[0], s.showPre!==false); }catch(e){} }
     }
+    try{ await endingScene(); }catch(e){}
     await sleep(1000);
     await load().catch(()=>{});
   }while(true);
