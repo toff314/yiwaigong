@@ -65,6 +65,8 @@ textarea::placeholder{color:#5a5346}
 .qitem .st.err{color:#b0654f}
 
 /* 计数 */
+.section-title{width:100%;max-width:520px;text-align:center;margin-top:38px;color:var(--gold);font-size:16px;letter-spacing:.4em;text-indent:.4em;position:relative;z-index:1}
+.section-title::after{content:"";display:block;width:52px;height:1px;margin:14px auto 0;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
 .count-band{width:100%;max-width:520px;text-align:center;margin-top:26px;font-size:14px;color:var(--muted);letter-spacing:.15em}
 .count-band b{color:var(--gold);font-size:20px;font-weight:600;margin:0 4px}
 .lamp-band{margin-top:16px}
@@ -129,11 +131,20 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
     <div class="verse">音容宛在 &nbsp;·&nbsp; 风范长存<br>请您分享与老人共度的记忆</div>
   </div>
 
+  <!-- 点亮心灯：放在最上面 -->
+  <a class="watch-btn" id="watch-btn" href="/play.html">
+    <span class="main"><span class="lamp-dot"></span>点亮心灯 · 忆·外公</span>
+    <span class="sub">循着灯火，去看看他</span>
+  </a>
+  <div class="count-band lamp-band">已有 <b id="lamps">—</b> 盏心灯亮起</div>
+
+  <div class="section-title">添 加 记 忆</div>
+
   <!-- 口令门 -->
   <div class="card" id="gate-view">
     <label>进门口令</label>
     <input type="text" id="gate-code" placeholder="请输入家人口令" autocomplete="off">
-    <button class="submit" id="gate-btn">进 入</button>
+    <button class="submit" id="gate-btn">开 启 记 忆</button>
     <div class="hint" style="text-align:center">口令由家人统一告知，用于保护这份回忆</div>
   </div>
 
@@ -181,11 +192,6 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
   </div>
 
   <div class="count-band">已收集 <b id="cnt">—</b> 份回忆</div>
-  <a class="watch-btn" id="watch-btn" href="/play.html">
-    <span class="main"><span class="lamp-dot"></span>点亮心灯 · 忆·外公</span>
-    <span class="sub">进入追思相册</span>
-  </a>
-  <div class="count-band lamp-band">已有 <b id="lamps">—</b> 盏心灯亮起</div>
   <a class="count-band" id="msg-band" href="/messages.html" style="text-decoration:none;display:block">已有 <b id="msgcnt">—</b> 句留言 · 去看看 →</a>
 
   <div class="toast" id="toast"></div>
