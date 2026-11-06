@@ -75,10 +75,16 @@ function assignUploaders(db, newFiles) {
     inCategory.set(row.category + '|' + row.uploader, row.c);
   }
   const rank = new Map(order.map((n, idx) => [n, idx]));
+  const portraitFirst = [...PREMIUM, SECOND];
   const result = [];
   for (const f of newFiles) {
     const candidates = FAMILY.filter(n => (needs.get(n) || 0) > 0);
     candidates.sort((a, b) => {
+      if (f.category === '个影') {
+        const pa = portraitFirst.includes(a) && (inCategory.get(f.category + '|' + a) || 0) === 0 ? 0 : 1;
+        const pb = portraitFirst.includes(b) && (inCategory.get(f.category + '|' + b) || 0) === 0 ? 0 : 1;
+        if (pa !== pb) return pa - pb;
+      }
       const ra = inCategory.get(f.category + '|' + a) || 0;
       const rb = inCategory.get(f.category + '|' + b) || 0;
       if (ra !== rb) return ra - rb;
