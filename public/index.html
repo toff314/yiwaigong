@@ -217,6 +217,7 @@ function refreshLamps(){
   }).catch(()=>{});
 }
 refreshLamps();
+setInterval(refreshLamps, 60 * 1000);
 $('watch-btn').addEventListener('click', async e=>{
   e.preventDefault();
   try{

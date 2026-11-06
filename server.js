@@ -280,9 +280,34 @@ app.get('/api/count', (req, res) => {
   res.json({ total: db.prepare('SELECT COUNT(*) c FROM media').get().c });
 });
 
-// 「点亮心灯」计数：每点一次记一次，持久化在 stats 表
+// 「点亮心灯」计数：点击累加，并每小时自动增加 1 盏；持久化在 stats 表
 const LAMP_KEY = 'lamps';
+const LAMP_AUTO_KEY = 'lamps_last_auto';
+const LAMP_INTERVAL_MS = 60 * 60 * 1000;
+const upsertStat = (key, value) => db.prepare(
+  'INSERT INTO stats (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'
+).run(key, value);
+
+function applyHourlyLamps() {
+  const now = Date.now();
+  const row = db.prepare('SELECT value FROM stats WHERE key=?').get(LAMP_AUTO_KEY);
+  if (!row) {
+    upsertStat(LAMP_AUTO_KEY, now);
+    return 0;
+  }
+  const last = Number(row.value) || now;
+  const hours = Math.floor((now - last) / LAMP_INTERVAL_MS);
+  if (hours <= 0) return 0;
+  db.transaction(() => {
+    db.prepare('INSERT INTO stats (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=value+excluded.value')
+      .run(LAMP_KEY, hours);
+    upsertStat(LAMP_AUTO_KEY, last + hours * LAMP_INTERVAL_MS);
+  })();
+  return hours;
+}
+
 function lampCount() {
+  applyHourlyLamps();
   const row = db.prepare('SELECT value FROM stats WHERE key=?').get(LAMP_KEY);
   return row ? Number(row.value) : 0;
 }
@@ -293,6 +318,11 @@ app.post('/api/lamps', (req, res) => {
   db.prepare('INSERT INTO stats (key,value) VALUES (?,1) ON CONFLICT(key) DO UPDATE SET value=value+1').run(LAMP_KEY);
   res.json({ lamps: lampCount() });
 });
+
+applyHourlyLamps();
+setInterval(() => {
+  try { applyHourlyLamps(); } catch (e) { console.error('心灯自动增加失败:', e.message); }
+}, 60 * 1000);
 
 app.use('/media/', express.static(UPLOAD_DIR, { maxAge: '1d' }));
 app.use('/music/', express.static(MUSIC_DIR, { maxAge: '1d' }));

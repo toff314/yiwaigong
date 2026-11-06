@@ -97,6 +97,12 @@ function lightLamp(){
     const el=document.getElementById('c-lamps'); if(el) el.textContent=lampCount;
   }).catch(()=>{});
 }
+setInterval(()=>{
+  fetch('/api/lamps').then(r=>r.json()).then(d=>{
+    lampCount=Math.max(0,Number(d.lamps)||0);
+    const el=document.getElementById('c-lamps'); if(el) el.textContent=lampCount;
+  }).catch(()=>{});
+}, 60 * 1000);
 const params=new URLSearchParams(location.search);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const mediaURL = f => (f.startsWith('media/')||f.startsWith('music/') ? '/' : '/media/')+encodeURIComponent(f.split('/').pop());
