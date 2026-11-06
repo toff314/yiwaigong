@@ -170,11 +170,7 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
         <input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime,video/webm">
       </div>
       <div class="queue" id="queue"></div>
-
-      <label>这段回忆属于哪个目录</label>
-      <select id="category">
-        <option value="">未分类</option>
-      </select>
+      <div class="hint">照片会先放到「大家上传」，我们之后统一整理分类。</div>
 
       <label>上传口令</label>
       <input type="text" id="gate-code" placeholder="上传照片需要家人口令" autocomplete="off">
@@ -207,20 +203,6 @@ const $ = id => document.getElementById(id);
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function showForm(){ $('done-view').style.display='none'; $('form-view').style.display=''; }
 function showDone(){ $('form-view').style.display='none'; $('done-view').style.display=''; }
-
-// 目录
-const CATEGORY_FALLBACK=['早期','平时','酒席','旅行','生病','合影'];
-function loadCategories(){
-  fetch('/api/categories').then(r=>r.json()).then(d=>{
-    const list=(d.categories||[]).filter(c=>c!=='未分类');
-    (list.length?list:CATEGORY_FALLBACK).forEach(c=>{
-      const o=document.createElement('option'); o.value=c; o.textContent=c; $('category').appendChild(o);
-    });
-  }).catch(()=>{
-    CATEGORY_FALLBACK.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; $('category').appendChild(o); });
-  });
-}
-loadCategories();
 
 // 计数
 function refreshCount(){ fetch('/api/count').then(r=>r.json()).then(d=>{ $('cnt').textContent=d.total; if(d.messages!==undefined) $('msgcnt').textContent=d.messages; }).catch(()=>{}); }
@@ -310,7 +292,6 @@ $('send').onclick = async ()=>{
         fd.append('code', codeVal);
         fd.append('uploader', uploader);
         fd.append('caption', content);
-        fd.append('category', $('category').value);
         fd.append('files', files[i]);
         const r = await fetch('/api/upload',{method:'POST',body:fd});
         const d = await r.json();

@@ -9,7 +9,7 @@ const { execSync, execFile } = require('child_process');
 const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
 const crypto = require('crypto');
-const { normalizeCategory, categoryCode, randomMessage } = require('./lib/family');
+const { categoryCode, randomMessage } = require('./lib/family');
 
 const ROOT = __dirname;
 const UPLOAD_DIR = path.join(ROOT, 'data', 'uploads');
@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS messages (
 try { db.exec("ALTER TABLE media ADD COLUMN category TEXT DEFAULT ''"); } catch {}
 try { db.exec("ALTER TABLE media ADD COLUMN sort_order INTEGER DEFAULT 0"); } catch {}
 
-const KNOWN_CATEGORIES = ['早期', '平时', '个影', '酒席', '旅行', '生病', '合影'];
+const KNOWN_CATEGORIES = ['早期', '平时', '个影', '酒席', '旅行', '生病', '合影', '大家上传'];
+const PUBLIC_CATEGORY = '大家上传';
 const DEFAULT_SETTINGS = {
   categoryOrder: [...KNOWN_CATEGORIES, '未分类'],
   playMode: 'category',       // category | sequence | random | single
@@ -217,8 +218,7 @@ app.post('/api/upload', upload.array('files', 50), async (req, res) => {
   const uploader = (req.body.uploader || '').trim().slice(0, 30);
   if (!uploader) return res.status(400).json({ error: '请填写您的名字' });
   const givenCaption = (req.body.caption || '').trim().slice(0, 200);
-  const allowed = new Set([...KNOWN_CATEGORIES, ...allCategories().filter(c => c !== '未分类')]);
-  const category = allowed.has(normalizeCategory(req.body.category)) ? normalizeCategory(req.body.category) : '';
+  const category = PUBLIC_CATEGORY;
   const saved = [];
   try {
     for (const f of req.files || []) {
