@@ -295,7 +295,6 @@ app.get('/api/messages', (req, res) => {
   res.json({ items: rows, total: rows.length });
 });
 app.post('/api/messages', (req, res) => {
-  if (req.body.code !== CONFIG.accessCode) return res.status(403).json({ error: '口令不正确' });
   const name = String(req.body.name || '').trim().slice(0, 30);
   const content = String(req.body.content || '').trim().slice(0, 500);
   if (!name) return res.status(400).json({ error: '请填写您的名字' });
