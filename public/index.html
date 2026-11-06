@@ -67,6 +67,9 @@ textarea::placeholder{color:#5a5346}
 /* 计数 */
 .section-title{width:100%;max-width:520px;text-align:center;margin-top:38px;color:var(--gold);font-size:16px;letter-spacing:.4em;text-indent:.4em;position:relative;z-index:1}
 .section-title::after{content:"";display:block;width:52px;height:1px;margin:14px auto 0;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent)}
+.tabs{width:100%;max-width:520px;display:flex;gap:10px;margin-top:22px;position:relative;z-index:1}
+.tab{flex:1;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-family:inherit;font-size:14px;letter-spacing:.12em;padding:11px 8px;cursor:pointer;transition:all .3s}
+.tab.on{color:var(--gold);border-color:var(--gold);background:rgba(201,168,106,.1)}
 .count-band{width:100%;max-width:520px;text-align:center;margin-top:26px;font-size:14px;color:var(--muted);letter-spacing:.15em}
 .count-band b{color:var(--gold);font-size:20px;font-weight:600;margin:0 4px}
 .lamp-band{margin-top:16px}
@@ -148,6 +151,12 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
     <div class="hint" style="text-align:center">口令由家人统一告知，用于保护这份回忆</div>
   </div>
 
+  <!-- 添加记忆：上传 / 留言 两个入口 -->
+  <div class="tabs" id="tabs" style="display:none">
+    <button class="tab on" id="tab-upload" type="button">上传照片 / 视频</button>
+    <button class="tab" id="tab-msg" type="button">写一句留言</button>
+  </div>
+
   <!-- 上传表单 -->
   <div class="card" id="form-view" style="display:none">
     <label>您的名字</label>
@@ -183,7 +192,7 @@ button.submit:not(:disabled):active{border-color:var(--gold)}
 
   <!-- 纯文字留言 -->
   <div class="card" id="msg-view" style="display:none">
-    <label>只想留句话？</label>
+    <label>写一句留言</label>
     <div class="hint" style="margin-top:0;margin-bottom:10px">不用传照片，写下想对老人说的话就好。</div>
     <input type="text" id="msg-name" placeholder="您的名字" maxlength="30">
     <textarea id="msg-content" placeholder="写下想说的话…" maxlength="500" rows="4" style="margin-top:10px"></textarea>
@@ -261,12 +270,21 @@ function tryGate(){
 }
 function showContent(){
   $('gate-view').style.display='none';
-  show('form-view');
-  $('msg-view').style.display='';
+  $('tabs').style.display='flex';
+  setTab('upload');
+}
+function setTab(tab){
+  $('tab-upload').classList.toggle('on', tab==='upload');
+  $('tab-msg').classList.toggle('on', tab==='msg');
+  $('done-view').style.display='none';
+  $('form-view').style.display = tab==='upload' ? '' : 'none';
+  $('msg-view').style.display = tab==='msg' ? '' : 'none';
 }
 $('gate-btn').onclick = tryGate;
 $('gate-code').addEventListener('keydown', e=>{ if(e.key==='Enter') tryGate(); });
 if(code) showContent();
+$('tab-upload').onclick = ()=>setTab('upload');
+$('tab-msg').onclick = ()=>setTab('msg');
 
 // 预置寄语
 PRESETS.forEach(p=>{
@@ -318,7 +336,7 @@ $('send').onclick = async ()=>{
     $('send').disabled=false;
   }
 };
-$('again').onclick = ()=>{ show('form-view'); $('send').disabled=true; };
+$('again').onclick = ()=>{ setTab('upload'); $('send').disabled=true; };
 
 // 纯文字留言
 $('msg-send').onclick = async ()=>{
