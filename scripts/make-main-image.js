@@ -48,7 +48,7 @@ function svg(w, h) {
     <rect x="${frame + 10}" y="${frame + 10}" width="${w - frame * 2 - 20}" height="${h - frame * 2 - 20}" fill="none" stroke="#b99757" stroke-opacity=".12"/>
     <g font-family="'Noto Serif CJK SC','Songti SC',serif" text-anchor="middle">
       <text x="${cx}" y="${top - title * 0.85}" fill="#c9a86a" fill-opacity=".75" font-size="${verse * 0.9}" letter-spacing="${verse * 0.6}">追 思</text>
-      <text x="${cx}" y="${top + title * 0.15}" fill="#fffdf6" font-size="${title}" font-weight="600" letter-spacing="${title * 0.16}">忆 · 外公</text>
+      <text x="${cx}" y="${top + title * 0.15}" fill="#fffdf6" font-size="${title * 0.6}" font-weight="600" letter-spacing="${title * 0.05}">忆叶公玉生老大人</text>
       <line x1="${cx - w * 0.16}" y1="${top + title * 0.55}" x2="${cx + w * 0.16}" y2="${top + title * 0.55}" stroke="url(#gold)" stroke-opacity=".7"/>
       <text x="${cx}" y="${top + title * 0.55 + name * 1.25}" fill="#f2ead8" font-size="${name}" letter-spacing="${name * 0.18}">叶玉生</text>
       <text x="${cx}" y="${top + title * 0.55 + name * 1.25 + years * 1.55}" fill="#e8c987" font-size="${years}" letter-spacing="${years * 0.22}">1938 — 2026</text>

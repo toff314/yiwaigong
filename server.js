@@ -25,7 +25,7 @@ const FFMPEG = fs.existsSync(path.join(ROOT, 'tools', 'ffmpeg')) ? path.join(ROO
 const CONFIG = {
   accessCode: process.env.MEMORIAL_CODE || 'yeyusheng', // 口令：可改成外公名字
   adminPassword: process.env.MEMORIAL_ADMIN || 'yiwaijong2026',
-  title: '忆·外公',
+  title: '忆叶公玉生老大人',
   subtitle: '叶玉生 · 1938 — 2026',
 };
 
